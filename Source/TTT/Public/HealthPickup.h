@@ -33,7 +33,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	UPROPERTY(EditAnywhere, Category="Pickup")
-	float ArmourAmount;
+	float ArmourAmount = 25.0f;
 	/** Time to wait before respawning this pickup */
 	UPROPERTY(EditAnywhere, Category="Pickup", meta = (ClampMin = 0, ClampMax = 120, Units = "s"))
 	float RespawnTime = 4.0f;

@@ -20,7 +20,7 @@ class TTT_API AFPSGameMode : public AGameModeBase
 public:
 	AFPSGameMode();
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Timer")
-	float GameDuration = 2.0f;
+	float GameDuration = 60.0f;
 	
 	//Current remaining time
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Timer")

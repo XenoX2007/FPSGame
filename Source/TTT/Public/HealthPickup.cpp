@@ -29,8 +29,8 @@ AHealthPickup::AHealthPickup()
 	SphereCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	SphereCollision->bFillCollisionUnderneathForNavmesh = true;
 
-	// subscribe to the collision overlap on the sphere
-	SphereCollision->OnComponentBeginOverlap.AddDynamic(this, &AHealthPickup::OnOverlap);
+	
+	
 
 	// create the mesh
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
@@ -43,8 +43,10 @@ AHealthPickup::AHealthPickup()
 void AHealthPickup::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	// subscribe to the collision overlap on the sphere
+	SphereCollision->OnComponentBeginOverlap.AddUniqueDynamic(this, &AHealthPickup::OnOverlap);
 }
+
 
 // Called every frame
 void AHealthPickup::Tick(float DeltaTime)
@@ -79,7 +81,10 @@ void AHealthPickup::OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 	}
 	
 	ArmorComp->AddArmour(ArmourAmount);
-	
+	// consume the pickup
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	GetWorld()->GetTimerManager().SetTimer(RespawnTimer, this, &AHealthPickup::RespawnPickup, RespawnTime, false);
 }
 
 void AHealthPickup::RespawnPickup()
