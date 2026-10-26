@@ -84,3 +84,4 @@ bool AShooterGameMode::ShouldSpawnEnemyNPCs() const
 	// only spawn enemy NPCs in single player mode
 	return NumberOfLocalPlayers < 2;
 }
+

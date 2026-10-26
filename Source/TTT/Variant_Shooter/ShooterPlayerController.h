@@ -87,6 +87,9 @@ protected:
 	/** Called when the possessed pawn is damaged */
 	UFUNCTION()
 	void OnPawnDamaged(float LifePercent);
+	
+	UFUNCTION()
+	void OnArmourChanged(float currentArmour, float maxArmour);
 
 	/** Returns true if the player should use UMG touch controls */
 	bool ShouldUseTouchControls() const;

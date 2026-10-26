@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "TTTCharacter.h"
 #include "ShooterWeaponHolder.h"
+#include "ShooterArmourComponent.h"
 #include "ShooterCharacter.generated.h"
 
 class AShooterWeapon;
@@ -30,6 +31,10 @@ class TTT_API AShooterCharacter : public ATTTCharacter, public IShooterWeaponHol
 	UPawnNoiseEmitterComponent* PawnNoiseEmitter;
 
 protected:
+	
+	//Armour Component
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	TObjectPtr<UShooterArmourComponent> _ArmourComponent;
 
 	/** Fire weapon input action */
 	UPROPERTY(EditAnywhere, Category ="Input")

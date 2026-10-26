@@ -18,9 +18,13 @@ AShooterCharacter::AShooterCharacter()
 {
 	// create the noise emitter component
 	PawnNoiseEmitter = CreateDefaultSubobject<UPawnNoiseEmitterComponent>(TEXT("Pawn Noise Emitter"));
-
-	// configure movement
+	
+	
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 600.0f, 0.0f);
+	
+	_ArmourComponent = CreateDefaultSubobject<UShooterArmourComponent>(TEXT("ArmourComponent"));
+	// configure movement
+	
 }
 
 void AShooterCharacter::BeginPlay()
@@ -67,6 +71,14 @@ float AShooterCharacter::TakeDamage(float Damage, struct FDamageEvent const& Dam
 	{
 		return 0.0f;
 	}
+	
+	if (_ArmourComponent)
+	{
+		Damage = _ArmourComponent->MitigateDamage(Damage);
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("Damage: %f"), Damage);
+	
 
 	// Reduce HP
 	CurrentHP -= Damage;
@@ -336,3 +348,6 @@ void AShooterCharacter::SetTeam(uint8 Team)
 {
 	TeamByte = Team;
 }
+
+
+  

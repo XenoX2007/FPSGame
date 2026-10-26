@@ -5,8 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Engine/DataTable.h"
-#include "Engine/StaticMesh.h"
-#include "ShooterPickup.generated.h"
+#include "Engine/StaticMesh.h" //
+#include "ShooterPickup.generated.h" 
 
 class USphereComponent;
 class UPrimitiveComponent;

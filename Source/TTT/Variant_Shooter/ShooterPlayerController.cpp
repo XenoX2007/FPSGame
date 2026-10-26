@@ -96,6 +96,11 @@ void AShooterPlayerController::OnPossess(APawn* InPawn)
 
 		// force update the life bar
 		ShooterCharacter->OnDamaged.Broadcast(1.0f);
+		
+		if (UShooterArmourComponent* ArmourComp = ShooterCharacter->FindComponentByClass<UShooterArmourComponent>())
+		{
+			ArmourComp->OnArmourChanged.AddDynamic(this, &AShooterPlayerController::OnArmourChanged);
+		}
 	}
 }
 
@@ -144,6 +149,14 @@ void AShooterPlayerController::OnPawnDamaged(float LifePercent)
 	if (IsValid(BulletCounterUI))
 	{
 		BulletCounterUI->BP_Damaged(LifePercent);
+	}
+}
+
+void AShooterPlayerController::OnArmourChanged(float currentArmour, float maxArmour)
+{
+	if (IsValid(BulletCounterUI))
+	{
+		BulletCounterUI->BP_ArmourDamaged(currentArmour / maxArmour);
 	}
 }
 
