@@ -9,6 +9,7 @@
 #include "TimerManager.h"
 #include "ShooterNPC.h"
 #include "Kismet/GameplayStatics.h"
+
 #include "ShooterGameMode.h"
 
 // Sets default values
@@ -69,7 +70,7 @@ void AShooterNPCSpawner::SpawnNPC()
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-		AShooterNPC* SpawnedNPC = GetWorld()->SpawnActor<AShooterNPC>(NPCClass, SpawnCapsule->GetComponentTransform(), SpawnParams);
+		AEnemyCharacter* SpawnedNPC = GetWorld()->SpawnActor<AEnemyCharacter>(NPCClass, SpawnCapsule->GetComponentTransform(), SpawnParams);
 
 		// was the NPC successfully created?
 		if (SpawnedNPC)

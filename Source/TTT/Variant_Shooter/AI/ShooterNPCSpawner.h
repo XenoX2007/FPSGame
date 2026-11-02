@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "EnemyCharacter.h"
 #include "ShooterNPCSpawner.generated.h"
 
 class UCapsuleComponent;
@@ -29,7 +30,7 @@ protected:
 
 	/** Type of NPC to spawn */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="NPC Spawner")
-	TSubclassOf<AShooterNPC> NPCClass;
+	TSubclassOf<AEnemyCharacter> NPCClass;
 
 	/** Time to wait before spawning the first NPC on game start */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="NPC Spawner", meta = (ClampMin = 0, ClampMax = 10))
