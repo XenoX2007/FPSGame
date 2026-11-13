@@ -72,3 +72,11 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# Course slides (>100 MB, too large for GitHub) and Office lock files
+Docs/*.pptx
+~$*
+
+# Machine-specific IDE / Claude config
+.idea/
+.mcp.json

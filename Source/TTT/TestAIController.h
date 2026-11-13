@@ -34,11 +34,16 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
 	UBehaviorTree* BehaviorTreeAsset;
-	
-	UFUNCTION()
-	void OnTargetPerCeptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+
+	/** Blackboard key written by perception (must match BB_SimpleEnemy) */
+	UPROPERTY(EditDefaultsOnly, Category = "AI")
+	FName TargetActorKey = TEXT("TargetActor");
 
 public:
+	/** Perception callback: writes/clears the Blackboard's TargetActor. Public so automation tests can drive it. */
+	UFUNCTION()
+	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 };

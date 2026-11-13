@@ -67,7 +67,8 @@ public:
 	virtual void OnWeaponDeactivated(AShooterWeapon* InWeapon) override{};
 
 	
-	virtual void OnSemiWeaponRefire() override{};
+	/** Semi-auto weapons fire one shot per StartFiring; re-trigger while we still have a target */
+	virtual void OnSemiWeaponRefire() override;
 
 protected:
 	// Called when the game starts or when spawned

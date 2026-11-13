@@ -8,7 +8,8 @@
 
 AFPSGameMode::AFPSGameMode()
 {
-	RemainingTime = 60.0f;
+	// Single source of truth: start value comes from GameDuration (re-applied in BeginPlay for Blueprint overrides)
+	RemainingTime = GameDuration;
 	
 	
 }
@@ -26,7 +27,8 @@ void AFPSGameMode::UpdateTimer()
 {
 	if (RemainingTime > 0.0f)
 	{
-		RemainingTime -= 1.0f;
+		// Clamp so a fractional GameDuration (e.g. 2.5) never broadcasts a negative time
+		RemainingTime = FMath::Max(RemainingTime - 1.0f, 0.0f);
 		// Broadcast the updated time to any listeners (like your UI)
 		OnTimerUpdated.Broadcast(RemainingTime);
 		
@@ -43,6 +45,7 @@ void AFPSGameMode::UpdateTimer()
 
 void AFPSGameMode::HandleGameLoss()
 {
+	bIsRoundOver = true;
 	UE_LOG(LogTemp, Warning, TEXT("Timer hit 0! Game Over - Loss Condition Triggered."));
 	
 	// Implement your loss condition here:

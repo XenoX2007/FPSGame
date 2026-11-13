@@ -4,12 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "EnemyCharacter.h"
 #include "ShooterNPCSpawner.generated.h"
 
 class UCapsuleComponent;
 class UArrowComponent;
-class AShooterNPC;
+class AEnemyCharacter;
 
 /**
  *  A basic Actor in charge of spawning Shooter NPCs and monitoring their deaths.

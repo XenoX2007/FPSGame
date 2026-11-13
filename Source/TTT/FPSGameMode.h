@@ -27,6 +27,10 @@ public:
 	float RemainingTime;
 	
 	//Delegate broadcasted every second
+	// True once the countdown has reached zero and the loss condition fired
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Timer")
+	bool bIsRoundOver = false;
+
 	UPROPERTY(BlueprintAssignable, Category = "Timer")
 	FOnTimerUpdatedDelegate OnTimerUpdated;
 	

@@ -37,6 +37,15 @@ void AEnemyCharacter::StopFiring()
 	}
 }
 
+void AEnemyCharacter::OnSemiWeaponRefire()
+{
+	// Same idea as AShooterNPC: keep shooting until StopFiring clears the target
+	if (Weapon && IsValid(CurrentAimTarget))
+	{
+		Weapon->StartFiring();
+	}
+}
+
 float AEnemyCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
                                   class AController* EventInstigator, AActor* DamageCauser)
 {
@@ -59,6 +68,11 @@ void AEnemyCharacter::AttachWeaponMeshes(AShooterWeapon* WeaponToAttach)
 
 FVector AEnemyCharacter::GetWeaponTargetLocation()
 {
+	// Aim at the current target if we have one, otherwise straight ahead
+	if (IsValid(CurrentAimTarget))
+	{
+		return CurrentAimTarget->GetActorLocation();
+	}
 	return GetActorLocation() + (GetActorForwardVector() * 1000.0f);
 }
 

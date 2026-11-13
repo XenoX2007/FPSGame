@@ -7,7 +7,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/ArrowComponent.h"
 #include "TimerManager.h"
-#include "ShooterNPC.h"
+#include "EnemyCharacter.h"
 #include "Kismet/GameplayStatics.h"
 
 #include "ShooterGameMode.h"
