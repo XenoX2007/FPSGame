@@ -100,6 +100,9 @@ void AShooterPlayerController::OnPossess(APawn* InPawn)
 		if (UShooterArmourComponent* ArmourComp = ShooterCharacter->FindComponentByClass<UShooterArmourComponent>())
 		{
 			ArmourComp->OnArmourChanged.AddDynamic(this, &AShooterPlayerController::OnArmourChanged);
+
+			// force update the armour bar (the component's BeginPlay broadcast may have happened before we bound)
+			OnArmourChanged(ArmourComp->GetCurrentArmour(), ArmourComp->GetMaxArmour());
 		}
 	}
 }

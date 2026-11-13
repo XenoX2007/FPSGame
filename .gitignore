@@ -80,3 +80,6 @@ Docs/*.pptx
 # Machine-specific IDE / Claude config
 .idea/
 .mcp.json
+
+# Course docs, slides and DevLog stay local (not pushed)
+Docs/

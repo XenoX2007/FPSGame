@@ -95,6 +95,21 @@ float AShooterCharacter::TakeDamage(float Damage, struct FDamageEvent const& Dam
 	return Damage;
 }
 
+bool AShooterCharacter::Heal(float Amount)
+{
+	// Can't heal the dead, and nothing to do at full HP
+	if (Amount <= 0.0f || CurrentHP <= 0.0f || CurrentHP >= MaxHP)
+	{
+		return false;
+	}
+
+	CurrentHP = FMath::Min(CurrentHP + Amount, MaxHP);
+
+	// Same delegate TakeDamage uses, so the HUD health bar updates
+	OnDamaged.Broadcast(CurrentHP / MaxHP);
+	return true;
+}
+
 void AShooterCharacter::DoAim(float Yaw, float Pitch)
 {
 	// only route inputs if the character is not dead

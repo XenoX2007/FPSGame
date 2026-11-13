@@ -55,7 +55,11 @@ Class đang có trong `Source/TTT/` (mô tả theo code hiện tại, cập nh�
 - `ATestAIController` — AI controller: `AIPerception` với sense Sight (radius 1500/2000, góc 90°, phát hiện mọi affiliation); `OnPossess` chạy `BehaviorTreeAsset`. `OnTargetPerceptionUpdated` (public): chỉ phản ứng với pawn `IsPlayerControlled()`; thấy → set Blackboard `TargetActor` + `SetFocus`; mất dấu → clear + `ClearFocus` + `StopFiring`. Test: `TTT.AI.Perception.*`.
 - `II_Scorable2` (file `I_Scorable2.h`) — interface với `AddScore()` (`BlueprintNativeEvent`). Tên chưa đúng chuẩn UE; hỏi Minh trước khi đổi tên vì Blueprint có thể đang tham chiếu.
 - `ACheckpoint` (`Private/`) — Box trigger: actor nào implement `II_Scorable2` đi vào thì gọi `Execute_AddScore`, rồi broadcast `ItemPickedUp`. Logic overlap đang viết trong header.
-- `AHealthPickup` (`Public/`) — pickup copy từ `AShooterPickup`: overlap → `UShooterArmourComponent::AddArmour(ArmourAmount)` (tức là cộng **armour**, chưa phải máu), ẩn rồi respawn sau `RespawnTime`; Blueprint làm animation qua `BP_OnRespawn` và gọi `FinishRespawn`.
+- `APickupBase` (`Public/`, Abstract) — base cho pickup: sphere overlap → `TryPickup(Actor)`; chỉ tiêu thụ khi `ApplyPickup()` (virtual) trả `true`; ẩn + tắt collision, respawn sau `RespawnTime`; `OnRespawn` là `BlueprintNativeEvent` (mặc định gọi `FinishRespawn`).
+- `AHealthPickup` (`Public/`) — con của `APickupBase`: `Cast<AShooterCharacter>` → `Heal(HealAmount)`. Blueprint: `Studentwork/MyHealthPickup`.
+- `AShieldPickup` (`Public/`) — con của `APickupBase`: `FindComponentByClass<UShooterArmourComponent>()` → `AddArmour(ArmourAmount)` nếu chưa đầy. Test: `TTT.Pickup.*`.
+- `AShooterCharacter` (`Variant_Shooter/`) — player, từ template, **đã sửa**: có `UShooterArmourComponent`; thêm `Heal()`, `GetCurrentHP()`, `GetMaxHP()`. `UCLASS(abstract)` → test phải spawn `BP_ShooterCharacter`.
+- `UShooterArmourComponent` (`Variant_Shooter/`) — armour (tuần 4): `MitigateDamage`, `AddArmour`, getter, `StartingArmour` (khởi tạo trong `BeginPlay`), delegate `OnArmourChanged` → `AShooterPlayerController` → UI.
 - `UBTTask_Shoot` (`BTTask_Shoot.h`) — BT task "Shoot": đọc `TargetActor` từ Blackboard → `AEnemyCharacter::StartFiring`, trả `Succeeded` ngay; `AbortTask` → `StopFiring`. Dùng trong `BT_SimpleEnemy` (asset Blueprint).
 - `AShooterNPCSpawner` (`Variant_Shooter/AI/`) — từ template, **đã sửa**: spawn `AEnemyCharacter` (`NPCClass`), lắng nghe `OnPawnDeath` để respawn.
 - `AFirstActor`, `AMyActor` — actor thử nghiệm, chưa có logic.

@@ -9,10 +9,11 @@
 // Sets default values for this component's properties
 UShooterArmourComponent::UShooterArmourComponent()
 {
-	CurrentArmour = MaxArmour;
+	// CurrentArmour is set in BeginPlay, after Blueprint defaults (MaxArmour/StartingArmour) are applied
+	CurrentArmour = 0.0f;
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bCanEverTick = false; // event-driven, nothing to do per frame
 
 	// ...
 }
@@ -22,6 +23,9 @@ UShooterArmourComponent::UShooterArmourComponent()
 void UShooterArmourComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	CurrentArmour = FMath::Clamp(StartingArmour, 0.0f, MaxArmour);
+	OnArmourChanged.Broadcast(CurrentArmour, MaxArmour);
 
 	// ...
 	

@@ -115,6 +115,16 @@ public:
 	/** Handle incoming damage */
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
+	/** Restores HP (clamped to MaxHP). Returns false if nothing changed (already full or dead). */
+	UFUNCTION(BlueprintCallable, Category="Health")
+	bool Heal(float Amount);
+
+	UFUNCTION(BlueprintPure, Category="Health")
+	float GetCurrentHP() const { return CurrentHP; }
+
+	UFUNCTION(BlueprintPure, Category="Health")
+	float GetMaxHP() const { return MaxHP; }
+
 public:
 
 	/** Handles aim inputs from either controls or UI interfaces */

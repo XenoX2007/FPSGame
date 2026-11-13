@@ -28,12 +28,25 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Armour")
 	void AddArmour(float amount);
 
+	UFUNCTION(BlueprintPure, Category = "Armour")
+	float GetCurrentArmour() const { return CurrentArmour; }
+
+	UFUNCTION(BlueprintPure, Category = "Armour")
+	float GetMaxArmour() const { return MaxArmour; }
+
+	UFUNCTION(BlueprintPure, Category = "Armour")
+	bool IsArmourFull() const { return CurrentArmour >= MaxArmour; }
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Armour")
 	float MaxArmour = 100.0f;
+
+	/** Armour at BeginPlay (clamped to MaxArmour). Lower it to make shield pickups matter. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Armour", meta = (ClampMin = 0))
+	float StartingArmour = 100.0f;
 	
 	UPROPERTY(BlueprintReadWrite, VisibleInstanceOnly, Category = "Armour")
 	float CurrentArmour;
