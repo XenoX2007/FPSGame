@@ -54,11 +54,14 @@ bool APickupBase::TryPickup(AActor* Other)
 		return false;
 	}
 
-	// Consume: hide, stop overlapping, schedule the respawn
+	// Consume: hide, stop overlapping, schedule the respawn (if this pickup respawns)
 	bIsAvailable = false;
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
-	GetWorld()->GetTimerManager().SetTimer(RespawnTimer, this, &APickupBase::RespawnPickup, RespawnTime, false);
+	if (bRespawns)
+	{
+		GetWorld()->GetTimerManager().SetTimer(RespawnTimer, this, &APickupBase::RespawnPickup, RespawnTime, false);
+	}
 	return true;
 }
 

@@ -9,7 +9,11 @@
 /**
  * 
  */
+class ACollectiblePickup;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTimerUpdatedDelegate, float, RemainingTime);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCollectibleProgressDelegate, int32, Collected, int32, Total);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRoundEventDelegate);
 UCLASS()
 
 class TTT_API AFPSGameMode : public AGameMode
@@ -49,12 +53,50 @@ public:
 	// Bound to every ACheckpoint::ItemPickedUp in the level
 	UFUNCTION()
 	void OnItemPickedUp();
-	
+
+	// True when the round ended because every collectible was collected
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Game State")
+	bool bPlayerWon = false;
+
+	UFUNCTION(BlueprintPure, Category = "Collectibles")
+	int32 GetTotalCollectibles() const { return TotalCollectibles; }
+
+	UFUNCTION(BlueprintPure, Category = "Collectibles")
+	int32 GetCollectedCount() const { return CollectedCount; }
+
+	// --- Events for UI / feedback (Observer pattern: C++ broadcasts, Blueprint listens) ---
+
+	// Fired on every collect and once at BeginPlay (0 / Total)
+	UPROPERTY(BlueprintAssignable, Category = "Collectibles|Events")
+	FOnCollectibleProgressDelegate OnCollectibleProgress;
+
+	// Fired when the player pressed Start and the countdown begins
+	UPROPERTY(BlueprintAssignable, Category = "Game State|Events")
+	FOnRoundEventDelegate OnMatchStarted;
+
+	// Fired once when every collectible was collected in time
+	UPROPERTY(BlueprintAssignable, Category = "Game State|Events")
+	FOnRoundEventDelegate OnGameWon;
+
+	// Fired once when the timer reached zero
+	UPROPERTY(BlueprintAssignable, Category = "Game State|Events")
+	FOnRoundEventDelegate OnGameLost;
+
 	private:
 	FTimerHandle CountdownTimerHandle;
-	
+
+	int32 TotalCollectibles = 0;
+	int32 CollectedCount = 0;
+
 	//Function called every second by the timer handle
 	void UpdateTimer();
+
+	// Bound to every ACollectiblePickup::OnCollected in the level
+	UFUNCTION()
+	void HandleCollectibleCollected(ACollectiblePickup* Pickup);
+
+	// Win condition: all collectibles collected before the timer ran out
+	void HandleGameWin();
 	
 	protected:
 	virtual void BeginPlay() override;

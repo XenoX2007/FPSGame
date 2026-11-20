@@ -45,6 +45,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Pickup", meta = (ClampMin = 0, ClampMax = 120, Units = "s"))
 	float RespawnTime = 4.0f;
 
+	/** If false the pickup is consumed for good (e.g. win-condition collectibles) */
+	UPROPERTY(EditDefaultsOnly, Category="Pickup", meta = (ToolTip = "If unticked, the pickup never comes back after being collected."))
+	bool bRespawns = true;
+
 	/** What the pickup does. Return true only if it actually had an effect (so it gets consumed). */
 	virtual bool ApplyPickup(AActor* Other) { return false; }
 

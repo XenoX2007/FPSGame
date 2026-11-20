@@ -11,6 +11,7 @@
 #include "ShooterArmourComponent.h"
 #include "HealthPickup.h"
 #include "ShieldPickup.h"
+#include "CollectiblePickup.h"
 
 #if WITH_AUTOMATION_TESTS
 
@@ -224,6 +225,43 @@ bool FTTTPickupRespawnTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Available again after RespawnTime"), Pickup->IsAvailable());
 	TestFalse(TEXT("Visible again"), Pickup->IsHidden());
 	TestTrue(TEXT("Collision re-enabled"), Pickup->GetActorEnableCollision());
+	return true;
+}
+
+// ---------------------------------------------------------------- Collectible (win-condition item)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTTTCollectibleOnceTest, "TTT.Pickup.Collectible.CollectedOnceAndNeverRespawns",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTTTCollectibleOnceTest::RunTest(const FString& Parameters)
+{
+	TTTPickupTest::FFixture F;
+	if (!F.Setup(*this)) return false;
+	ACollectiblePickup* Pickup = F.SpawnPickup<ACollectiblePickup>();
+	if (!TestNotNull(TEXT("Pickup"), Pickup)) return false;
+
+	TestTrue(TEXT("Player collects it"), Pickup->TryPickup(F.Character));
+	TestFalse(TEXT("Consumed"), Pickup->IsAvailable());
+
+	// Unlike health/shield, a collectible must stay gone for the rest of the round.
+	F.TickTimers(Pickup->GetRespawnTime() + 60.0f);
+	TestFalse(TEXT("Still consumed after RespawnTime"), Pickup->IsAvailable());
+	TestTrue(TEXT("Still hidden"), Pickup->IsHidden());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTTTCollectibleIgnoresTest, "TTT.Pickup.Collectible.IgnoresNonPlayerActors",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTTTCollectibleIgnoresTest::RunTest(const FString& Parameters)
+{
+	TTTPickupTest::FFixture F;
+	if (!F.Setup(*this)) return false;
+	ACollectiblePickup* Pickup = F.SpawnPickup<ACollectiblePickup>();
+	AActor* Rock = F.World->SpawnActor<AActor>();
+	if (!TestNotNull(TEXT("Pickup"), Pickup)) return false;
+
+	TestFalse(TEXT("Null actor"), Pickup->TryPickup(nullptr));
+	TestFalse(TEXT("Non-player actor (e.g. enemy, prop)"), Pickup->TryPickup(Rock));
+	TestTrue(TEXT("Stays available"), Pickup->IsAvailable());
 	return true;
 }
 

@@ -6,6 +6,7 @@
 #include "Engine/Engine.h"
 #include "EngineUtils.h"
 #include "Private/Checkpoint.h"
+#include "CollectiblePickup.h"
 
 
 AFPSGameMode::AFPSGameMode()
@@ -27,6 +28,47 @@ void AFPSGameMode::BeginPlay()
 	for (TActorIterator<ACheckpoint> It(GetWorld()); It; ++It)
 	{
 		It->ItemPickedUp.AddUniqueDynamic(this, &AFPSGameMode::OnItemPickedUp);
+	}
+
+	// Count the win-condition collectibles and listen to each of them
+	TotalCollectibles = 0;
+	CollectedCount = 0;
+	for (TActorIterator<ACollectiblePickup> It(GetWorld()); It; ++It)
+	{
+		It->OnCollected.AddUniqueDynamic(this, &AFPSGameMode::HandleCollectibleCollected);
+		++TotalCollectibles;
+	}
+	OnCollectibleProgress.Broadcast(CollectedCount, TotalCollectibles);
+}
+
+void AFPSGameMode::HandleCollectibleCollected(ACollectiblePickup* Pickup)
+{
+	// Collecting after the round ended (win or loss) changes nothing
+	if (bIsRoundOver)
+	{
+		return;
+	}
+
+	++CollectedCount;
+	OnCollectibleProgress.Broadcast(CollectedCount, TotalCollectibles);
+
+	if (CollectedCount >= TotalCollectibles)
+	{
+		HandleGameWin();
+	}
+}
+
+void AFPSGameMode::HandleGameWin()
+{
+	bIsRoundOver = true;
+	bPlayerWon = true;
+	GetWorldTimerManager().ClearTimer(CountdownTimerHandle);
+
+	OnGameWon.Broadcast();
+
+	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+	{
+		PC->SetPause(true);
 	}
 }
 
@@ -68,6 +110,7 @@ void AFPSGameMode::StartGameMatch()
 	}
 
 	GetWorldTimerManager().SetTimer(CountdownTimerHandle, this, &AFPSGameMode::UpdateTimer, 1.0f, true);
+	OnMatchStarted.Broadcast();
 }
 
 void AFPSGameMode::UpdateTimer()
@@ -92,9 +135,16 @@ void AFPSGameMode::UpdateTimer()
 
 void AFPSGameMode::HandleGameLoss()
 {
+	// Only one result per round (a win may already have ended it)
+	if (bIsRoundOver)
+	{
+		return;
+	}
+
 	bIsRoundOver = true;
 	UE_LOG(LogTemp, Warning, TEXT("Timer hit 0! Game Over - Loss Condition Triggered."));
-	
+	OnGameLost.Broadcast();
+
 	// Implement your loss condition here:
 	APlayerController* PC = GetWorld()->GetFirstPlayerController();
 	if (PC)

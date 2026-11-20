@@ -8,6 +8,7 @@
 #include "TimerManager.h"
 #include "FPSGameMode.h"
 #include "Private/Checkpoint.h"
+#include "CollectiblePickup.h"
 
 #if WITH_AUTOMATION_TESTS
 
@@ -237,6 +238,114 @@ bool FTTTGameModeBindsCheckpointsTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("GameMode bound to checkpoint A"), CheckpointA->ItemPickedUp.IsAlreadyBound(GameMode, &AFPSGameMode::OnItemPickedUp));
 	TestTrue(TEXT("GameMode bound to checkpoint B"), CheckpointB->ItemPickedUp.IsAlreadyBound(GameMode, &AFPSGameMode::OnItemPickedUp));
+
+	Wrapper.EndPlayInTestWorld();
+	return true;
+}
+
+// ---- Win condition: collect every collectible before the timer runs out ----
+
+namespace TTTTimerTest
+{
+	TArray<ACollectiblePickup*> SpawnCollectibles(UWorld* World, int32 Count)
+	{
+		TArray<ACollectiblePickup*> Result;
+		FActorSpawnParameters Params;
+		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		for (int32 i = 0; i < Count; ++i)
+		{
+			// Spread out and far from the origin so nothing overlaps by accident
+			Result.Add(World->SpawnActor<ACollectiblePickup>(ACollectiblePickup::StaticClass(),
+				FTransform(FVector(10000.0f + i * 500.0f, 0.0f, 0.0f)), Params));
+		}
+		return Result;
+	}
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTTTGameModeCountsCollectiblesTest, "TTT.GameMode.CountsCollectiblesInLevel",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTTTGameModeCountsCollectiblesTest::RunTest(const FString& Parameters)
+{
+	FTestWorldWrapper Wrapper;
+	if (!Wrapper.CreateTestWorld(EWorldType::Game) || !Wrapper.BeginPlayInTestWorld())
+	{
+		Wrapper.ForwardErrorMessages(this);
+		return false;
+	}
+
+	UWorld* World = Wrapper.GetTestWorld();
+	TTTTimerTest::SpawnCollectibles(World, 3);
+	AFPSGameMode* GameMode = TTTTimerTest::SpawnGameMode(World, 10.0f, /*bStartMatch*/ false);
+	if (!TestNotNull(TEXT("GameMode spawned"), GameMode)) return false;
+
+	TestEqual(TEXT("TotalCollectibles"), GameMode->GetTotalCollectibles(), 3);
+	TestEqual(TEXT("CollectedCount starts at 0"), GameMode->GetCollectedCount(), 0);
+
+	Wrapper.EndPlayInTestWorld();
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTTTGameModeWinsTest, "TTT.GameMode.WinsWhenAllCollectiblesCollected",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTTTGameModeWinsTest::RunTest(const FString& Parameters)
+{
+	FTestWorldWrapper Wrapper;
+	if (!Wrapper.CreateTestWorld(EWorldType::Game) || !Wrapper.BeginPlayInTestWorld())
+	{
+		Wrapper.ForwardErrorMessages(this);
+		return false;
+	}
+
+	UWorld* World = Wrapper.GetTestWorld();
+	TArray<ACollectiblePickup*> Items = TTTTimerTest::SpawnCollectibles(World, 3);
+	AFPSGameMode* GameMode = TTTTimerTest::SpawnGameMode(World, 10.0f, /*bStartMatch*/ true);
+	if (!TestNotNull(TEXT("GameMode spawned"), GameMode)) return false;
+
+	// Simulate the player collecting items (the pickup broadcasts OnCollected).
+	Items[0]->OnCollected.Broadcast(Items[0]);
+	Items[1]->OnCollected.Broadcast(Items[1]);
+	TestEqual(TEXT("2 of 3 collected"), GameMode->GetCollectedCount(), 2);
+	TestFalse(TEXT("Not won yet"), GameMode->bPlayerWon);
+	TestFalse(TEXT("Round still running"), GameMode->bIsRoundOver);
+
+	TTTTimerTest::TickSeconds(Wrapper, 2);
+	Items[2]->OnCollected.Broadcast(Items[2]);
+	TestTrue(TEXT("Player won"), GameMode->bPlayerWon);
+	TestTrue(TEXT("Round over"), GameMode->bIsRoundOver);
+
+	// Timer must stop once the round is won.
+	TTTTimerTest::TickSeconds(Wrapper, 3);
+	TestEqual(TEXT("Timer frozen after win"), GameMode->RemainingTime, 8.0f);
+
+	Wrapper.EndPlayInTestWorld();
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTTTGameModeLosesTest, "TTT.GameMode.LosesWhenTimeRunsOutBeforeAllCollected",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTTTGameModeLosesTest::RunTest(const FString& Parameters)
+{
+	FTestWorldWrapper Wrapper;
+	if (!Wrapper.CreateTestWorld(EWorldType::Game) || !Wrapper.BeginPlayInTestWorld())
+	{
+		Wrapper.ForwardErrorMessages(this);
+		return false;
+	}
+
+	UWorld* World = Wrapper.GetTestWorld();
+	TArray<ACollectiblePickup*> Items = TTTTimerTest::SpawnCollectibles(World, 2);
+	AFPSGameMode* GameMode = TTTTimerTest::SpawnGameMode(World, 3.0f, /*bStartMatch*/ true);
+	if (!TestNotNull(TEXT("GameMode spawned"), GameMode)) return false;
+
+	Items[0]->OnCollected.Broadcast(Items[0]);
+	TTTTimerTest::TickSeconds(Wrapper, 3);
+	TestTrue(TEXT("Round over"), GameMode->bIsRoundOver);
+	TestFalse(TEXT("Player did not win"), GameMode->bPlayerWon);
+
+	// Collecting after the round ended must not flip the result.
+	Items[1]->OnCollected.Broadcast(Items[1]);
+	TestFalse(TEXT("Late collect does not win"), GameMode->bPlayerWon);
+	TestEqual(TEXT("Late collect not counted"), GameMode->GetCollectedCount(), 1);
 
 	Wrapper.EndPlayInTestWorld();
 	return true;
