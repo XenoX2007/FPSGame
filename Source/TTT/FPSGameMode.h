@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameModeBase.h"
+#include "GameFramework/GameMode.h"
 #include "FPSGameMode.generated.h"
 
 /**
@@ -12,7 +12,7 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTimerUpdatedDelegate, float, RemainingTime);
 UCLASS()
 
-class TTT_API AFPSGameMode : public AGameModeBase
+class TTT_API AFPSGameMode : public AGameMode
 {
 	GENERATED_BODY()
 	
@@ -37,6 +37,14 @@ public:
 	//Handles the loss condition when the timer hits 0
 	UFUNCTION(BlueprintCallable, Category = "Game State")
 	void HandleGameLoss();
+
+	// True once the player pressed Start; gates ReadyToStartMatch
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Game State")
+	bool bManualStartRequested = false;
+
+	// Called from the Start button in UI: starts the match and the countdown
+	UFUNCTION(BlueprintCallable, Category = "Game State")
+	void StartGameMatch();
 	
 	private:
 	FTimerHandle CountdownTimerHandle;
@@ -46,4 +54,7 @@ public:
 	
 	protected:
 	virtual void BeginPlay() override;
+
+	// Match only leaves WaitingToStart after the player pressed Start
+	virtual bool ReadyToStartMatch_Implementation() override;
 };

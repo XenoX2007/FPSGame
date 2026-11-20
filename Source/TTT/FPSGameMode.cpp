@@ -19,7 +19,30 @@ void AFPSGameMode::BeginPlay()
 	Super::BeginPlay();
 	RemainingTime = GameDuration;
 	OnTimerUpdated.Broadcast(RemainingTime);
-	
+	// Countdown no longer starts here: it waits for StartGameMatch() (Start button)
+}
+
+bool AFPSGameMode::ReadyToStartMatch_Implementation()
+{
+	// Call the parent's _Implementation directly (Super::ReadyToStartMatch() would re-dispatch the native event)
+	return bManualStartRequested && Super::ReadyToStartMatch_Implementation();
+}
+
+void AFPSGameMode::StartGameMatch()
+{
+	// Ignore repeated presses and presses after the round ended
+	if (bIsRoundOver || GetWorldTimerManager().TimerExists(CountdownTimerHandle))
+	{
+		return;
+	}
+
+	bManualStartRequested = true;
+
+	if (GetMatchState() == MatchState::WaitingToStart)
+	{
+		StartMatch();
+	}
+
 	GetWorldTimerManager().SetTimer(CountdownTimerHandle, this, &AFPSGameMode::UpdateTimer, 1.0f, true);
 }
 

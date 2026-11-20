@@ -13,13 +13,19 @@
 namespace TTTTimerTest
 {
 	// Spawns AFPSGameMode in a running test world with a custom duration (set before BeginPlay).
-	AFPSGameMode* SpawnGameMode(UWorld* World, float Duration)
+	// bStartMatch simulates the player pressing the Start button (UI calls StartGameMatch).
+	AFPSGameMode* SpawnGameMode(UWorld* World, float Duration, bool bStartMatch = true)
 	{
 		AFPSGameMode* GameMode = World->SpawnActorDeferred<AFPSGameMode>(AFPSGameMode::StaticClass(), FTransform::Identity);
 		if (GameMode)
 		{
 			GameMode->GameDuration = Duration;
-			GameMode->FinishSpawning(FTransform::Identity); // triggers BeginPlay -> starts the 1s timer
+			GameMode->FinishSpawning(FTransform::Identity); // triggers BeginPlay -> resets RemainingTime
+
+			if (bStartMatch)
+			{
+				GameMode->StartGameMatch(); // starts the 1s countdown timer
+			}
 
 			// New timers start as "pending"; a zero-delta tick activates them without advancing time.
 			++GFrameCounter;
@@ -130,6 +136,77 @@ bool FTTTTimerNeverNegativeTest::RunTest(const FString& Parameters)
 	TTTTimerTest::TickSeconds(Wrapper, 3);
 	TestEqual(TEXT("RemainingTime is clamped to zero"), GameMode->RemainingTime, 0.0f);
 	TestTrue(TEXT("Round is over"), GameMode->bIsRoundOver);
+
+	Wrapper.EndPlayInTestWorld();
+	return true;
+}
+
+// ---- Game state: the match (and its timer) must wait for the Start button ----
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTTTGameStateTimerWaitsForStartTest, "TTT.GameState.TimerWaitsForStartGameMatch",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTTTGameStateTimerWaitsForStartTest::RunTest(const FString& Parameters)
+{
+	FTestWorldWrapper Wrapper;
+	if (!Wrapper.CreateTestWorld(EWorldType::Game) || !Wrapper.BeginPlayInTestWorld())
+	{
+		Wrapper.ForwardErrorMessages(this);
+		return false;
+	}
+
+	// Player has NOT pressed Start yet.
+	AFPSGameMode* GameMode = TTTTimerTest::SpawnGameMode(Wrapper.GetTestWorld(), 10.0f, /*bStartMatch*/ false);
+	if (!TestNotNull(TEXT("GameMode spawned"), GameMode)) return false;
+
+	TTTTimerTest::TickSeconds(Wrapper, 3);
+	TestFalse(TEXT("Manual start not requested yet"), GameMode->bManualStartRequested);
+	TestEqual(TEXT("RemainingTime does not move before Start"), GameMode->RemainingTime, 10.0f);
+
+	Wrapper.EndPlayInTestWorld();
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTTTGameStateStartBeginsCountdownTest, "TTT.GameState.StartGameMatchBeginsCountdown",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTTTGameStateStartBeginsCountdownTest::RunTest(const FString& Parameters)
+{
+	FTestWorldWrapper Wrapper;
+	if (!Wrapper.CreateTestWorld(EWorldType::Game) || !Wrapper.BeginPlayInTestWorld())
+	{
+		Wrapper.ForwardErrorMessages(this);
+		return false;
+	}
+
+	AFPSGameMode* GameMode = TTTTimerTest::SpawnGameMode(Wrapper.GetTestWorld(), 10.0f, /*bStartMatch*/ true);
+	if (!TestNotNull(TEXT("GameMode spawned"), GameMode)) return false;
+
+	TTTTimerTest::TickSeconds(Wrapper, 3);
+	TestTrue(TEXT("Manual start was requested"), GameMode->bManualStartRequested);
+	TestEqual(TEXT("RemainingTime after Start + 3 seconds"), GameMode->RemainingTime, 7.0f);
+
+	Wrapper.EndPlayInTestWorld();
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTTTGameStateStartTwiceTest, "TTT.GameState.StartGameMatchTwiceDoesNotDoubleCount",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTTTGameStateStartTwiceTest::RunTest(const FString& Parameters)
+{
+	FTestWorldWrapper Wrapper;
+	if (!Wrapper.CreateTestWorld(EWorldType::Game) || !Wrapper.BeginPlayInTestWorld())
+	{
+		Wrapper.ForwardErrorMessages(this);
+		return false;
+	}
+
+	AFPSGameMode* GameMode = TTTTimerTest::SpawnGameMode(Wrapper.GetTestWorld(), 10.0f, /*bStartMatch*/ true);
+	if (!TestNotNull(TEXT("GameMode spawned"), GameMode)) return false;
+
+	// Pressing Start a second time (e.g. double click) must not restart or speed up the countdown.
+	TTTTimerTest::TickSeconds(Wrapper, 2);
+	GameMode->StartGameMatch();
+	TTTTimerTest::TickSeconds(Wrapper, 1);
+	TestEqual(TEXT("RemainingTime keeps counting from where it was"), GameMode->RemainingTime, 7.0f);
 
 	Wrapper.EndPlayInTestWorld();
 	return true;
