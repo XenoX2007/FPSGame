@@ -2,6 +2,8 @@
 
 
 #include "ShooterProjectile.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "GameFramework/Character.h"
@@ -93,6 +95,24 @@ void AShooterProjectile::NotifyHit(class UPrimitiveComponent* MyComp, AActor* Ot
 
 		// destroy the projectile right away
 		Destroy();
+	}
+}
+
+void AShooterProjectile::PlayImpactSound(USoundBase* Sound, const FHitResult& Hit)
+{
+	// Use the sound passed in (not the ImpactSound member) so designers can play any sound
+	if (Sound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, Sound, Hit.ImpactPoint);
+	}
+}
+
+void AShooterProjectile::SpawnImpactParticles(UNiagaraSystem* System, const FHitResult& Hit)
+{
+	// Same pattern as PlayImpactSound: Blueprint decides which effect, C++ handles placement
+	if (System)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, System, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
 	}
 }
 

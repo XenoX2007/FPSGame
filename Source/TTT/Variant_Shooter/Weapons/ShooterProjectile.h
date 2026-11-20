@@ -10,6 +10,8 @@ class USphereComponent;
 class UProjectileMovementComponent;
 class ACharacter;
 class UPrimitiveComponent;
+class USoundBase;
+class UNiagaraSystem;
 
 /**
  *  Simple projectile class for a first person shooter game
@@ -77,6 +79,14 @@ protected:
 	/** Timer to handle deferred destruction of this projectile */
 	FTimerHandle DestructionTimer;
 
+	/** Sound played where the projectile hits. Use a Sound Cue (e.g. SC_BulletImpact) for pitch/volume variety and attenuation. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Projectile|Effects")
+	TObjectPtr<USoundBase> ImpactSound;
+
+	/** Niagara effect spawned where the projectile hits, facing away from the surface (e.g. a SimpleSpriteBurst set to loop Once). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Projectile|Effects")
+	TObjectPtr<UNiagaraSystem> ImpactParticles;
+
 public:	
 
 	/** Constructor */
@@ -100,6 +110,14 @@ protected:
 
 	/** Processes a projectile hit for the given actor */
 	void ProcessHit(AActor* HitActor, UPrimitiveComponent* HitComp, const FVector& HitLocation, const FVector& HitDirection);
+
+	/** Plays Sound at the hit's impact point. Call it from "On Projectile Hit" (e.g. with Impact Sound). Does nothing if Sound is empty. */
+	UFUNCTION(BlueprintCallable, Category="Projectile|Effects")
+	void PlayImpactSound(USoundBase* Sound, const FHitResult& Hit);
+
+	/** Spawns System at the hit's impact point, rotated to the surface normal. Call it from "On Projectile Hit" (e.g. with Impact Particles). Does nothing if System is empty. */
+	UFUNCTION(BlueprintCallable, Category="Projectile|Effects")
+	void SpawnImpactParticles(UNiagaraSystem* System, const FHitResult& Hit);
 
 	/** Passes control to Blueprint to implement any effects on hit. */
 	UFUNCTION(BlueprintImplementableEvent, Category="Projectile", meta = (DisplayName = "On Projectile Hit"))

@@ -15,6 +15,7 @@
 #include "ShooterArmourComponent.h"
 #include "ShooterNPCSpawner.h"
 #include "BTTask_Shoot.h"
+#include "ShooterProjectile.h"
 
 #if WITH_AUTOMATION_TESTS && WITH_METADATA
 
@@ -27,7 +28,7 @@ namespace TTTDesignerTest
 			AFPSGameMode::StaticClass(), APickupBase::StaticClass(), AHealthPickup::StaticClass(),
 			AShieldPickup::StaticClass(), ACollectiblePickup::StaticClass(), AEnemyCharacter::StaticClass(),
 			ATestAIController::StaticClass(), UShooterArmourComponent::StaticClass(),
-			AShooterNPCSpawner::StaticClass(), UBTTask_Shoot::StaticClass()
+			AShooterNPCSpawner::StaticClass(), UBTTask_Shoot::StaticClass(), AShooterProjectile::StaticClass()
 		};
 	}
 
