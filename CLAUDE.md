@@ -7,13 +7,16 @@
 - **Sinh viên:** Minh — BUV, Computer Games Design and Programming
 - **Module:** GDEV50010 — C++ For Engines
 - **Bài đánh giá:**
-  - **A1 — Game Project:** game FPS time-attack trong UE5. Yêu cầu chia rõ phần C++ và phần Blueprint, có tài liệu planning, làm theo TDD.
-  - **A2 — Reflective Report:** báo cáo phản tư về quá trình làm A1.
+  - **A1 — Game Project (70%):** game FPS time-attack trong UE5. Nộp: Planning & Intent Document (800–1000 từ; bắt buộc Function Specifier Usage, Input to Action Flow, Communication Hierarchy), project UE5 + build + video gameplay, và **Technical Design Document** (2–3 trang: UML C++→BP, code snippet của pattern, Designer Manual). Lưu ý: trong brief "TDD" = *Technical Design Document*; test-driven development là lựa chọn riêng của Minh, không được chấm trực tiếp.
+    - Gameplay bắt buộc: timer đếm ngược + **nhặt đủ pickup trước khi hết giờ (điều kiện thắng)**; enemy AI tìm, di chuyển tới, tấn công player; player bắn được enemy.
+    - Rubric: C++ giữ data/logic, BP chỉ visual/audio + chỉnh biến; specifier `EditDefaultsOnly`/`BlueprintReadOnly`/`Category`/`ToolTip`; ≥1 pattern (vd Observer bằng dynamic delegate); C++ broadcast delegate → BP con bắt để làm feedback; safe pointer; Phase 4 xóa prototype/debug code.
+    - Nộp bài: không có tên sinh viên (loại `CLAUDE.md`, `.claude/`, `.mcp.json` khỏi zip); xóa `Binaries/Intermediate/DerivedDataCache/Saved` trước khi zip.
+  - **A2 — Reflective Report (30%):** 1800 từ (tối đa 1980), Harvard; cấu trúc Introduction / Best Practices / Critical Reflection; chỉ Critical Reflection được dùng ngôi thứ nhất.
 - **Tài liệu môn học** (brief, rubric, slide) để ở `Docs/`. Hãy đọc chúng trước khi đề xuất kiến trúc hoặc tính năng:
-  - `Docs/MakingATimer.pptx` — slide hướng dẫn làm timer trong GameMode (đã áp dụng vào `AFPSGameMode`)
-  - `Docs/A1_Brief.pdf` — `<chưa có, đổi tên cho đúng file>`
-  - `Docs/A1_Rubric.pdf` — `<...>`
-  - `Docs/A2_Brief.pdf` — `<...>`
+  - `Docs/ControllingOurGameStates.pptx` — slide game state: `StartGameMatch` + override `ReadyToStartMatch`, timer chạy sau khi bấm Start (đã áp dụng vào `AFPSGameMode`)
+  - `Docs/A1_Brief.pdf` — brief + rubric A1 (rubric ở Appendix 1)
+  - `Docs/A2_Brief.pdf` — brief + rubric A2 (rubric ở Appendix 1)
+  - `Docs/TDD/` — tư liệu Technical Design Document (class diagram, data flow)
   - `Docs/Planning.md` — tài liệu planning của Minh
   - `Docs/DevLog.md` — nhật ký làm việc, dùng làm tư liệu cho A2
 - Khi rubric và đề xuất của Claude mâu thuẫn nhau, **rubric luôn thắng**. Nếu rubric chưa rõ, Claude phải hỏi lại, không được tự đoán.
@@ -50,7 +53,7 @@ Class đang có trong `Source/TTT/` (mô tả theo code hiện tại, cập nh�
 - `ATTTPlayerController`, `ATTTCameraManager` — có sẵn từ template, chưa sửa.
 - `ATTTCharacter` — nhân vật người chơi từ template, **đã sửa**: implement `II_Scorable2` (`AddScore_Implementation` hiện chỉ `UE_LOG`, chưa cộng điểm thật), có thêm `DashAction`.
 - `ATTTGameMode` — từ template, **đã sửa**: `BeginPlay` tìm mọi `ACheckpoint` trong level và bind `ItemPickedUp` → `OnItemPickedUp` (hiện chỉ `UE_LOG`).
-- `AFPSGameMode` (kế thừa `AGameMode`, theo slide `ControllingOurGameStates.pptx`) — match chờ ở `WaitingToStart` tới khi UI gọi `StartGameMatch()` (BlueprintCallable: set `bManualStartRequested`, `StartMatch()`, khởi động timer; bỏ qua nếu bấm lại); `ReadyToStartMatch_Implementation` trả `bManualStartRequested && Super`. Test `TTT.GameState.*`. Luật time-attack: đếm ngược `GameDuration` (60s) bằng `FTimerHandle` lặp 1s, broadcast `OnTimerUpdated(RemainingTime)` cho UI; hết giờ → `HandleGameLoss()` (set `bIsRoundOver = true`, pause game). `RemainingTime` được clamp ≥ 0. Có test `TTT.Timer.*` trong `Tests/FPSGameModeTimerTest.cpp`. Chưa có điều kiện thắng. Lưu ý: đang song song với `ATTTGameMode` — cần xác định level dùng GameMode nào.
+- `AFPSGameMode` (kế thừa `AGameMode`, theo slide `ControllingOurGameStates.pptx`) — match chờ ở `WaitingToStart` tới khi UI gọi `StartGameMatch()` (BlueprintCallable: set `bManualStartRequested`, `StartMatch()`, khởi động timer; bỏ qua nếu bấm lại); `ReadyToStartMatch_Implementation` trả `bManualStartRequested && Super`. Test `TTT.GameState.*`. `BeginPlay` bind mọi `ACheckpoint::ItemPickedUp` → `OnItemPickedUp` (test `TTT.GameMode.BindsCheckpointPickups`). **Đây là GameMode chính**; `ATTTGameMode` là bản trùng sẽ bỏ sau khi Blueprint/level chuyển sang. Luật time-attack: đếm ngược `GameDuration` (60s) bằng `FTimerHandle` lặp 1s, broadcast `OnTimerUpdated(RemainingTime)` cho UI; hết giờ → `HandleGameLoss()` (set `bIsRoundOver = true`, pause game). `RemainingTime` được clamp ≥ 0. Có test `TTT.Timer.*` trong `Tests/FPSGameModeTimerTest.cpp`. Chưa có điều kiện thắng. Lưu ý: đang song song với `ATTTGameMode` — cần xác định level dùng GameMode nào.
 - `AEnemyCharacter` — enemy kế thừa `ATTTCharacter` + `IShooterWeaponHolder` (tái dùng `AShooterWeapon` của Variant_Shooter). Spawn `WeaponClass` gắn vào socket `HandGrip_R` ở `BeginPlay`; `StartFiring(Target)`/`StopFiring()` (dự kiến gọi từ Behavior Tree trong Blueprint); `TakeDamage` trừ `CurrentHP`, ≤ 0 → `Die()` (broadcast `OnPawnDeath`, tắt collision, `Destroy`). Aim vào `CurrentAimTarget` nếu có, không thì 1000 unit phía trước.
 - `ATestAIController` — AI controller: `AIPerception` với sense Sight (radius 1500/2000, góc 90°, phát hiện mọi affiliation); `OnPossess` chạy `BehaviorTreeAsset`. `OnTargetPerceptionUpdated` (public): chỉ phản ứng với pawn `IsPlayerControlled()`; thấy → set Blackboard `TargetActor` + `SetFocus`; mất dấu → clear + `ClearFocus` + `StopFiring`. Test: `TTT.AI.Perception.*`.
 - `II_Scorable2` (file `I_Scorable2.h`) — interface với `AddScore()` (`BlueprintNativeEvent`). Tên chưa đúng chuẩn UE; hỏi Minh trước khi đổi tên vì Blueprint có thể đang tham chiếu.
@@ -78,7 +81,7 @@ Class dự kiến thêm (cập nhật khi thay đổi):
 - Không đặt logic nặng trong `Tick`. Ưu tiên timer (`FTimerHandle`) và event.
 - Comment ngắn bằng tiếng Anh trong code. Giải thích cho Minh thì dùng tiếng Việt.
 
-## 6. Build và test (TDD)
+## 6. Build và test (test-driven development)
 
 **Build** (kiểm tra lỗi compile; tắt Unreal Editor trước, hoặc dùng Live Coding trong Editor thay cho lệnh này):
 ```bat

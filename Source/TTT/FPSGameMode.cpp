@@ -3,7 +3,9 @@
 
 #include "FPSGameMode.h"
 
-#include "GameFramework/GameMode.h"
+#include "Engine/Engine.h"
+#include "EngineUtils.h"
+#include "Private/Checkpoint.h"
 
 
 AFPSGameMode::AFPSGameMode()
@@ -20,6 +22,28 @@ void AFPSGameMode::BeginPlay()
 	RemainingTime = GameDuration;
 	OnTimerUpdated.Broadcast(RemainingTime);
 	// Countdown no longer starts here: it waits for StartGameMatch() (Start button)
+
+	// Listen to every checkpoint placed in the level
+	for (TActorIterator<ACheckpoint> It(GetWorld()); It; ++It)
+	{
+		It->ItemPickedUp.AddUniqueDynamic(this, &AFPSGameMode::OnItemPickedUp);
+	}
+}
+
+void AFPSGameMode::HandleMatchIsWaitingToStart()
+{
+	Super::HandleMatchIsWaitingToStart();
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red,
+			TEXT("STATE: Pre-Game (Waiting for button press / MatchState::WaitingToStart)"));
+	}
+}
+
+void AFPSGameMode::OnItemPickedUp()
+{
+	UE_LOG(LogTemp, Warning, TEXT("ItemPickedUp"));
 }
 
 bool AFPSGameMode::ReadyToStartMatch_Implementation()

@@ -45,6 +45,10 @@ public:
 	// Called from the Start button in UI: starts the match and the countdown
 	UFUNCTION(BlueprintCallable, Category = "Game State")
 	void StartGameMatch();
+
+	// Bound to every ACheckpoint::ItemPickedUp in the level
+	UFUNCTION()
+	void OnItemPickedUp();
 	
 	private:
 	FTimerHandle CountdownTimerHandle;
@@ -57,4 +61,7 @@ public:
 
 	// Match only leaves WaitingToStart after the player pressed Start
 	virtual bool ReadyToStartMatch_Implementation() override;
+
+	// Debug message while waiting for the Start button
+	virtual void HandleMatchIsWaitingToStart() override;
 };

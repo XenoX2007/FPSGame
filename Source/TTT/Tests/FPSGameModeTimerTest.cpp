@@ -7,6 +7,7 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "FPSGameMode.h"
+#include "Private/Checkpoint.h"
 
 #if WITH_AUTOMATION_TESTS
 
@@ -207,6 +208,35 @@ bool FTTTGameStateStartTwiceTest::RunTest(const FString& Parameters)
 	GameMode->StartGameMatch();
 	TTTTimerTest::TickSeconds(Wrapper, 1);
 	TestEqual(TEXT("RemainingTime keeps counting from where it was"), GameMode->RemainingTime, 7.0f);
+
+	Wrapper.EndPlayInTestWorld();
+	return true;
+}
+
+// ---- Checkpoints: GameMode listens to every checkpoint in the level ----
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTTTGameModeBindsCheckpointsTest, "TTT.GameMode.BindsCheckpointPickups",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTTTGameModeBindsCheckpointsTest::RunTest(const FString& Parameters)
+{
+	FTestWorldWrapper Wrapper;
+	if (!Wrapper.CreateTestWorld(EWorldType::Game) || !Wrapper.BeginPlayInTestWorld())
+	{
+		Wrapper.ForwardErrorMessages(this);
+		return false;
+	}
+
+	// Checkpoints are placed in the level before the GameMode begins play.
+	UWorld* World = Wrapper.GetTestWorld();
+	ACheckpoint* CheckpointA = World->SpawnActor<ACheckpoint>();
+	ACheckpoint* CheckpointB = World->SpawnActor<ACheckpoint>();
+	if (!TestNotNull(TEXT("Checkpoint A spawned"), CheckpointA) || !TestNotNull(TEXT("Checkpoint B spawned"), CheckpointB)) return false;
+
+	AFPSGameMode* GameMode = TTTTimerTest::SpawnGameMode(World, 10.0f, /*bStartMatch*/ false);
+	if (!TestNotNull(TEXT("GameMode spawned"), GameMode)) return false;
+
+	TestTrue(TEXT("GameMode bound to checkpoint A"), CheckpointA->ItemPickedUp.IsAlreadyBound(GameMode, &AFPSGameMode::OnItemPickedUp));
+	TestTrue(TEXT("GameMode bound to checkpoint B"), CheckpointB->ItemPickedUp.IsAlreadyBound(GameMode, &AFPSGameMode::OnItemPickedUp));
 
 	Wrapper.EndPlayInTestWorld();
 	return true;
