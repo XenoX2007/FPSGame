@@ -23,27 +23,27 @@ class TTT_API AFPSGameMode : public AGameMode
 	
 public:
 	AFPSGameMode();
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Timer")
+	/** How long the player has to collect every item, in seconds. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Timer", meta = (ClampMin = 1, Units = "s"))
 	float GameDuration = 60.0f;
-	
-	//Current remaining time
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Timer")
+
+	/** Seconds left in the current round (runtime only). */
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Timer")
 	float RemainingTime;
-	
-	//Delegate broadcasted every second
-	// True once the countdown has reached zero and the loss condition fired
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Timer")
+
+	/** True once the round has ended, by a win or a loss (runtime only). */
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Game State")
 	bool bIsRoundOver = false;
 
-	UPROPERTY(BlueprintAssignable, Category = "Timer")
+	/** Fired every second with the time left. Bind this in the HUD to show the countdown. */
+	UPROPERTY(BlueprintAssignable, Category = "Timer|Events")
 	FOnTimerUpdatedDelegate OnTimerUpdated;
 	
-	//Handles the loss condition when the timer hits 0
-	UFUNCTION(BlueprintCallable, Category = "Game State")
+	// Loss condition when the timer hits 0 (C++ only: Blueprint must not end the round itself)
 	void HandleGameLoss();
 
-	// True once the player pressed Start; gates ReadyToStartMatch
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Game State")
+	/** True once the player pressed Start; the match waits until then (runtime only). */
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Game State")
 	bool bManualStartRequested = false;
 
 	// Called from the Start button in UI: starts the match and the countdown
@@ -54,8 +54,8 @@ public:
 	UFUNCTION()
 	void OnItemPickedUp();
 
-	// True when the round ended because every collectible was collected
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Game State")
+	/** True when the round ended because every collectible was collected (runtime only). */
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Game State")
 	bool bPlayerWon = false;
 
 	UFUNCTION(BlueprintPure, Category = "Collectibles")
@@ -66,19 +66,19 @@ public:
 
 	// --- Events for UI / feedback (Observer pattern: C++ broadcasts, Blueprint listens) ---
 
-	// Fired on every collect and once at BeginPlay (0 / Total)
+	/** Fired on every collect and once at BeginPlay (0 / Total). Bind this in the HUD to show "2 / 5". */
 	UPROPERTY(BlueprintAssignable, Category = "Collectibles|Events")
 	FOnCollectibleProgressDelegate OnCollectibleProgress;
 
-	// Fired when the player pressed Start and the countdown begins
+	/** Fired when the player pressed Start and the countdown begins. */
 	UPROPERTY(BlueprintAssignable, Category = "Game State|Events")
 	FOnRoundEventDelegate OnMatchStarted;
 
-	// Fired once when every collectible was collected in time
+	/** Fired once when every collectible was collected in time. Show the win screen here. */
 	UPROPERTY(BlueprintAssignable, Category = "Game State|Events")
 	FOnRoundEventDelegate OnGameWon;
 
-	// Fired once when the timer reached zero
+	/** Fired once when the timer reached zero. Show the game-over screen here. */
 	UPROPERTY(BlueprintAssignable, Category = "Game State|Events")
 	FOnRoundEventDelegate OnGameLost;
 

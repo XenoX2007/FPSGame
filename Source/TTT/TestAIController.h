@@ -27,13 +27,17 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void OnPossess(APawn* InPawn) override;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI ")
-	UAIPerceptionComponent* AIPerceptionComp;
-	
-	UAISenseConfig_Sight* SightConfig;
-	
+	/** Lets the enemy see the player (sight radius and angle are set in C++). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	TObjectPtr<UAIPerceptionComponent> AIPerceptionComp;
+
+	// Sight sense config; UPROPERTY so the GC keeps it alive
+	UPROPERTY()
+	TObjectPtr<UAISenseConfig_Sight> SightConfig;
+
+	/** Behavior Tree the enemy runs when possessed (e.g. BT_SimpleEnemy). */
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
-	UBehaviorTree* BehaviorTreeAsset;
+	TObjectPtr<UBehaviorTree> BehaviorTreeAsset;
 
 	/** Blackboard key written by perception (must match BB_SimpleEnemy) */
 	UPROPERTY(EditDefaultsOnly, Category = "AI")

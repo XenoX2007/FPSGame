@@ -19,11 +19,13 @@ class TTT_API AShooterNPCSpawner : public AActor
 {
 	GENERATED_BODY()
 	
+	/** Area where enemies appear. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
-	UCapsuleComponent* SpawnCapsule;
+	TObjectPtr<UCapsuleComponent> SpawnCapsule;
 
+	/** Direction spawned enemies face. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
-	UArrowComponent* SpawnDirection;
+	TObjectPtr<UArrowComponent> SpawnDirection;
 
 protected:
 

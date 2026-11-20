@@ -20,14 +20,16 @@ public:
 	// Sets default values for this character's properties
 	AEnemyCharacter();
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Damage")
+	/** Health the enemy spawns with. The enemy dies when it reaches 0. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Damage", meta = (ClampMin = 1))
 	float MaxHP = 100.0f;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Damage")
+
+	/** Health left right now (runtime only). */
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Damage")
 	float CurrentHP ;
-	
-	//weapon handling
-	UPROPERTY(EditAnywhere,Category = "Weapon")
+
+	/** Weapon Blueprint the enemy spawns holding (attached to the HandGrip_R socket). */
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	TSubclassOf<AShooterWeapon> WeaponClass;
 	
 	UPROPERTY()

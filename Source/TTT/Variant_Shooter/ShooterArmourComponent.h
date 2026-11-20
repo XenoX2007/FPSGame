@@ -19,7 +19,8 @@ public:
 	
 	
 	
-	UPROPERTY(BlueprintReadWrite, Category = "Armour")
+	/** Fired whenever armour changes (damage or pickup). Bind this in the HUD to update the armour bar. */
+	UPROPERTY(BlueprintAssignable, Category = "Armour|Events")
 	FArmourChangedDelegate OnArmourChanged;
 	
 	UFUNCTION(BlueprintCallable, Category = "Armour")
@@ -41,17 +42,20 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 	
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Armour")
+	/** Highest armour the player can have. Shield pickups cannot go above this. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Armour", meta = (ClampMin = 0))
 	float MaxArmour = 100.0f;
 
 	/** Armour at BeginPlay (clamped to MaxArmour). Lower it to make shield pickups matter. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Armour", meta = (ClampMin = 0))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Armour", meta = (ClampMin = 0))
 	float StartingArmour = 100.0f;
-	
-	UPROPERTY(BlueprintReadWrite, VisibleInstanceOnly, Category = "Armour")
+
+	/** Armour left right now (runtime only). */
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Armour")
 	float CurrentArmour;
-	
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Armour")
+
+	/** Share of incoming damage the armour soaks up (0.5 = half). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Armour", meta = (ClampMin = 0, ClampMax = 1))
 	float DamageAbsorption = 0.5f;
 
 public:
