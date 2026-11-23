@@ -43,11 +43,23 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
 	FName TargetActorKey = TEXT("TargetActor");
 
+	/** How far away the enemy can first spot the player. */
+	UPROPERTY(EditDefaultsOnly, Category = "AI|Sight", meta = (ClampMin = 0, Units = "cm"))
+	float SightRadius = 1500.0f;
+
+	/** Once spotted, the player must get this far away before the enemy loses track. Kept at least as large as Sight Radius. */
+	UPROPERTY(EditDefaultsOnly, Category = "AI|Sight", meta = (ClampMin = 0, Units = "cm"))
+	float LoseSightRadius = 2000.0f;
+
+	/** Half-angle of the enemy's view cone: 90 means it sees everything in front of it (180 degrees total). */
+	UPROPERTY(EditDefaultsOnly, Category = "AI|Sight", meta = (ClampMin = 0, ClampMax = 180, Units = "deg"))
+	float SightAngleDegrees = 90.0f;
+
+	// Applies the designer's sight values before the perception component starts sensing
+	virtual void BeginPlay() override;
+
 public:
 	/** Perception callback: writes/clears the Blackboard's TargetActor. Public so automation tests can drive it. */
 	UFUNCTION()
 	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
-
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 };

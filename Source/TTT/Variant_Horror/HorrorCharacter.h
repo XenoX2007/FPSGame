@@ -23,13 +23,13 @@ class TTT_API AHorrorCharacter : public ATTTCharacter
 
 	/** Player light source */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
-	USpotLightComponent* SpotLight;
+	TObjectPtr<USpotLightComponent> SpotLight;
 	
 protected:
 
 	/** Fire weapon input action */
 	UPROPERTY(EditAnywhere, Category ="Input")
-	UInputAction* SprintAction;
+	TObjectPtr<UInputAction> SprintAction;
 
 	/** If true, we're sprinting */
 	bool bSprinting = false;

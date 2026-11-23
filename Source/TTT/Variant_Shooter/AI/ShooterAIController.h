@@ -23,11 +23,11 @@ class TTT_API AShooterAIController : public AAIController
 	
 	/** Runs the behavior StateTree for this NPC */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
-	UStateTreeAIComponent* StateTreeAI;
+	TObjectPtr<UStateTreeAIComponent> StateTreeAI;
 
 	/** Detects other actors through sight, hearing and other senses */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
-	UAIPerceptionComponent* AIPerception;
+	TObjectPtr<UAIPerceptionComponent> AIPerception;
 
 protected:
 

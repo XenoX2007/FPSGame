@@ -52,4 +52,17 @@ bool FTTTEnemyStartsAtMaxHPTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTTTEnemyDeathEventForBlueprintTest, "TTT.Enemy.DeathEventIsBlueprintAssignable",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTTTEnemyDeathEventForBlueprintTest::RunTest(const FString& Parameters)
+{
+	// Brief: C++ broadcasts, derived Blueprints catch the event for VFX/SFX feedback.
+	// Without UPROPERTY(BlueprintAssignable) the delegate is invisible to reflection and to Blueprint.
+	const FProperty* Prop = AEnemyCharacter::StaticClass()->FindPropertyByName(TEXT("OnPawnDeath"));
+	if (!TestNotNull(TEXT("OnPawnDeath is exposed to reflection (UPROPERTY)"), Prop)) return false;
+
+	TestTrue(TEXT("OnPawnDeath is BlueprintAssignable"), Prop->HasAnyPropertyFlags(CPF_BlueprintAssignable));
+	return true;
+}
+
 #endif // WITH_AUTOMATION_TESTS

@@ -6,6 +6,8 @@
 #include "Blueprint/UserWidget.h"
 #include "ShooterBulletCounterUI.generated.h"
 
+class UTextBlock;
+
 /**
  *  Simple bullet counter UI widget for a first person shooter game
  */
@@ -35,7 +37,7 @@ public:
 	
 protected:
 	UPROPERTY(meta = (BindWidget))
-	class UTextBlock* TimerText;
+	TObjectPtr<UTextBlock> TimerText;
 };
 
 

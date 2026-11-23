@@ -31,7 +31,11 @@ public:
 	/** Weapon Blueprint the enemy spawns holding (attached to the HandGrip_R socket). */
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	TSubclassOf<AShooterWeapon> WeaponClass;
-	
+
+	/** With no target, the enemy aims at a point this far straight ahead. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon", meta = (ClampMin = 0, Units = "cm"))
+	float DefaultAimDistance = 1000.0f;
+
 	UPROPERTY()
 	TObjectPtr<AShooterWeapon> Weapon;
 	
@@ -41,6 +45,8 @@ public:
 	void StartFiring(AActor* ActorToShoot);
 	void StopFiring();
 	
+	/** Fired once when HP reaches zero, just before the enemy is destroyed. Bind in the Blueprint for death VFX/SFX. */
+	UPROPERTY(BlueprintAssignable, Category = "Damage|Events")
 	FSimplePawnDeathDelegate OnPawnDeath;
 	
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
@@ -76,11 +82,4 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	void Die();
-
-public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 };

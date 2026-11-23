@@ -12,7 +12,6 @@
 #include "Engine/World.h"
 #include "Camera/CameraComponent.h"
 #include "TimerManager.h"
-#include "ShooterGameMode.h"
 
 AShooterCharacter::AShooterCharacter()
 {
@@ -314,12 +313,6 @@ void AShooterCharacter::Die()
 	if (IsValid(CurrentWeapon))
 	{
 		CurrentWeapon->DeactivateWeapon();
-	}
-
-	// increment the team score
-	if (AShooterGameMode* GM = Cast<AShooterGameMode>(GetWorld()->GetAuthGameMode()))
-	{
-		GM->IncrementTeamScore(TeamByte);
 	}
 
 	// grant the death tag to the character

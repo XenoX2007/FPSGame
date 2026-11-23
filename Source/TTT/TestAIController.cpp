@@ -12,15 +12,14 @@
 // Sets default values
 ATestAIController::ATestAIController()
 {
-	
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	// Perception and the Behaviour Tree are event-driven: nothing to do every frame
+	PrimaryActorTick.bCanEverTick = false;
 	AIPerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerceptionComp"));
-	
+
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
-	SightConfig->SightRadius = 1500.0f;
-	SightConfig->LoseSightRadius = 2000.0f;
-	SightConfig->PeripheralVisionAngleDegrees = 90.0f;
+	SightConfig->SightRadius = SightRadius;
+	SightConfig->LoseSightRadius = LoseSightRadius;
+	SightConfig->PeripheralVisionAngleDegrees = SightAngleDegrees;
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
@@ -29,6 +28,18 @@ ATestAIController::ATestAIController()
 	AIPerceptionComp->SetDominantSense(SightConfig->GetSenseImplementation());
 		
 	AIPerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &ATestAIController::OnTargetPerceptionUpdated);
+}
+
+void ATestAIController::BeginPlay()
+{
+	// Blueprint defaults are applied after the constructor, so copy them into the sense config here.
+	// Done before Super::BeginPlay so the perception component starts with the right values.
+	SightConfig->SightRadius = SightRadius;
+	SightConfig->LoseSightRadius = FMath::Max(LoseSightRadius, SightRadius);
+	SightConfig->PeripheralVisionAngleDegrees = SightAngleDegrees;
+	AIPerceptionComp->ConfigureSense(*SightConfig);
+
+	Super::BeginPlay();
 }
 
 void ATestAIController::OnPossess(APawn* InPawn)
@@ -78,11 +89,5 @@ void ATestAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 			Enemy->StopFiring();
 		}
 	}
-}
-
-// Called every frame
-void ATestAIController::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 }
 

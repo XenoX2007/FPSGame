@@ -12,8 +12,8 @@
 AEnemyCharacter::AEnemyCharacter()
 {
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
-	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	// Movement, AI and shooting are driven by components, the Behaviour Tree and weapon timers: no per-frame C++ work
+	PrimaryActorTick.bCanEverTick = false;
 }
 
 void AEnemyCharacter::StartFiring(AActor* ActorToShoot)
@@ -70,7 +70,7 @@ FVector AEnemyCharacter::GetWeaponTargetLocation()
 	{
 		return CurrentAimTarget->GetActorLocation();
 	}
-	return GetActorLocation() + (GetActorForwardVector() * 1000.0f);
+	return GetActorLocation() + (GetActorForwardVector() * DefaultAimDistance);
 }
 
 
@@ -109,17 +109,5 @@ void AEnemyCharacter::Die()
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetCharacterMovement()->StopMovementImmediately();
 	Destroy();
-}
-
-// Called every frame
-void AEnemyCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-}
-
-// Called to bind functionality to input
-void AEnemyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 

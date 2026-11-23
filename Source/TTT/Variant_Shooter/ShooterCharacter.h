@@ -29,7 +29,7 @@ class TTT_API AShooterCharacter : public ATTTCharacter, public IShooterWeaponHol
 	
 	/** AI Noise emitter component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
-	UPawnNoiseEmitterComponent* PawnNoiseEmitter;
+	TObjectPtr<UPawnNoiseEmitterComponent> PawnNoiseEmitter;
 
 protected:
 	
@@ -39,11 +39,11 @@ protected:
 
 	/** Fire weapon input action */
 	UPROPERTY(EditAnywhere, Category ="Input")
-	UInputAction* FireAction;
+	TObjectPtr<UInputAction> FireAction;
 
 	/** Switch weapon input action */
 	UPROPERTY(EditAnywhere, Category ="Input")
-	UInputAction* SwitchWeaponAction;
+	TObjectPtr<UInputAction> SwitchWeaponAction;
 
 	/** Name of the first person mesh weapon socket */
 	UPROPERTY(EditAnywhere, Category ="Weapons")

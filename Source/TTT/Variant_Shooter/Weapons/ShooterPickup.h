@@ -39,11 +39,11 @@ class TTT_API AShooterPickup : public AActor
 
 	/** Collision sphere */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
-	USphereComponent* SphereCollision;
+	TObjectPtr<USphereComponent> SphereCollision;
 
 	/** Weapon pickup mesh. Its mesh asset is set from the weapon data table */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
-	UStaticMeshComponent* Mesh;
+	TObjectPtr<UStaticMeshComponent> Mesh;
 	
 protected:
 
