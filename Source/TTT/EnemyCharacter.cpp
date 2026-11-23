@@ -1,9 +1,10 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "EnemyCharacter.h"
 
 #include "ShooterWeapon.h"
+#include "HealthComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
@@ -14,6 +15,21 @@ AEnemyCharacter::AEnemyCharacter()
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	// Movement, AI and shooting are driven by components, the Behaviour Tree and weapon timers: no per-frame C++ work
 	PrimaryActorTick.bCanEverTick = false;
+
+	// Same component the player uses (default Max Health 100)
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+}
+
+void AEnemyCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	HealthComponent->OnHealthDepleted.AddUniqueDynamic(this, &AEnemyCharacter::HandleHealthDepleted);
+}
+
+void AEnemyCharacter::HandleHealthDepleted(AActor* DeadActor)
+{
+	Die();
 }
 
 void AEnemyCharacter::StartFiring(AActor* ActorToShoot)
@@ -46,14 +62,10 @@ void AEnemyCharacter::OnSemiWeaponRefire()
 float AEnemyCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
                                   class AController* EventInstigator, AActor* DamageCauser)
 {
-	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	
-	CurrentHP -= ActualDamage;
-	if (CurrentHP <= 0.0f)
-	{
-		Die();
-	}
-	return ActualDamage;
+	const float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	// At 0 the component broadcasts OnHealthDepleted -> HandleHealthDepleted -> Die()
+	return HealthComponent->ApplyDamage(ActualDamage);
 }
 
 void AEnemyCharacter::AttachWeaponMeshes(AShooterWeapon* WeaponToAttach)
@@ -77,10 +89,8 @@ FVector AEnemyCharacter::GetWeaponTargetLocation()
 // Called when the game starts or when spawned
 void AEnemyCharacter::BeginPlay()
 {
+	// HealthComponent resets its own health in its BeginPlay (inside Super)
 	Super::BeginPlay();
-
-	// Read MaxHP here, not in the constructor: Blueprint defaults are applied after the constructor runs
-	CurrentHP = MaxHP;
 
 	if (IsValid(WeaponClass))
 	{

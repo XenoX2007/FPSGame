@@ -17,6 +17,7 @@
 #include "BTTask_Shoot.h"
 #include "ShooterProjectile.h"
 #include "TTTCharacter.h"
+#include "HealthComponent.h"
 
 #if WITH_AUTOMATION_TESTS && WITH_METADATA
 
@@ -30,7 +31,7 @@ namespace TTTDesignerTest
 			AShieldPickup::StaticClass(), ACollectiblePickup::StaticClass(), AEnemyCharacter::StaticClass(),
 			ATestAIController::StaticClass(), UShooterArmourComponent::StaticClass(),
 			AShooterNPCSpawner::StaticClass(), UBTTask_Shoot::StaticClass(), AShooterProjectile::StaticClass(),
-			ATTTCharacter::StaticClass()
+			ATTTCharacter::StaticClass(), UHealthComponent::StaticClass()
 		};
 	}
 
@@ -40,7 +41,7 @@ namespace TTTDesignerTest
 	{
 		return {
 			AFPSGameMode::StaticClass(), AEnemyCharacter::StaticClass(),
-			ATestAIController::StaticClass(), UShooterArmourComponent::StaticClass()
+			ATestAIController::StaticClass(), UShooterArmourComponent::StaticClass(), UHealthComponent::StaticClass()
 		};
 	}
 

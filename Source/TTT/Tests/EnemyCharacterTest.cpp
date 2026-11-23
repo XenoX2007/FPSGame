@@ -1,4 +1,4 @@
-// Automation tests for AEnemyCharacter health.
+// Automation tests for AEnemyCharacter health (via UHealthComponent) and its Blueprint-facing death event.
 // Run: Automation RunTests TTT.Enemy
 
 #include "CoreMinimal.h"
@@ -7,22 +7,25 @@
 #include "Engine/World.h"
 #include "Engine/DamageEvents.h"
 #include "EnemyCharacter.h"
+#include "HealthComponent.h"
 
 #if WITH_AUTOMATION_TESTS
 
 namespace TTTEnemyTest
 {
-	// Spawns an enemy with a custom MaxHP set before BeginPlay,
+	// Spawns an enemy whose health component's MaxHealth is set before BeginPlay,
 	// the same way a Blueprint child's default value is applied.
-	AEnemyCharacter* SpawnEnemy(UWorld* World, float MaxHP)
+	AEnemyCharacter* SpawnEnemy(FAutomationTestBase& Test, UWorld* World, float MaxHealth)
 	{
 		AEnemyCharacter* Enemy = World->SpawnActorDeferred<AEnemyCharacter>(AEnemyCharacter::StaticClass(),
 			FTransform::Identity, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-		if (Enemy)
-		{
-			Enemy->MaxHP = MaxHP;
-			Enemy->FinishSpawning(FTransform::Identity); // triggers BeginPlay
-		}
+		if (!Test.TestNotNull(TEXT("Enemy spawned"), Enemy)) return nullptr;
+
+		UHealthComponent* Health = Enemy->FindComponentByClass<UHealthComponent>();
+		if (!Test.TestNotNull(TEXT("Enemy has a HealthComponent"), Health)) return nullptr;
+		Health->MaxHealth = MaxHealth;
+
+		Enemy->FinishSpawning(FTransform::Identity); // triggers BeginPlay
 		return Enemy;
 	}
 }
@@ -38,15 +41,38 @@ bool FTTTEnemyStartsAtMaxHPTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	AEnemyCharacter* Enemy = TTTEnemyTest::SpawnEnemy(Wrapper.GetTestWorld(), 250.0f);
-	if (!TestNotNull(TEXT("Enemy spawned"), Enemy)) return false;
+	AEnemyCharacter* Enemy = TTTEnemyTest::SpawnEnemy(*this, Wrapper.GetTestWorld(), 250.0f);
+	if (!Enemy) return false;
+	UHealthComponent* Health = Enemy->FindComponentByClass<UHealthComponent>();
 
-	TestEqual(TEXT("CurrentHP uses the MaxHP set by the designer"), Enemy->CurrentHP, 250.0f);
+	TestEqual(TEXT("Health uses the MaxHealth set by the designer"), Health->GetCurrentHealth(), 250.0f);
 
 	// 150 damage must not kill an enemy the designer gave 250 HP.
 	Enemy->TakeDamage(150.0f, FDamageEvent(), nullptr, nullptr);
-	TestEqual(TEXT("HP after 150 damage"), Enemy->CurrentHP, 100.0f);
-	TestTrue(TEXT("Enemy still alive"), IsValid(Enemy));
+	TestEqual(TEXT("Health after 150 damage"), Health->GetCurrentHealth(), 100.0f);
+	TestFalse(TEXT("Enemy still alive"), Enemy->IsActorBeingDestroyed());
+
+	Wrapper.EndPlayInTestWorld();
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTTTEnemyDiesTest, "TTT.Enemy.DiesWhenHealthDepleted",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTTTEnemyDiesTest::RunTest(const FString& Parameters)
+{
+	FTestWorldWrapper Wrapper;
+	if (!Wrapper.CreateTestWorld(EWorldType::Game) || !Wrapper.BeginPlayInTestWorld())
+	{
+		Wrapper.ForwardErrorMessages(this);
+		return false;
+	}
+
+	AEnemyCharacter* Enemy = TTTEnemyTest::SpawnEnemy(*this, Wrapper.GetTestWorld(), 100.0f);
+	if (!Enemy) return false;
+
+	// HealthComponent reports depletion -> the enemy runs Die() -> Destroy()
+	Enemy->TakeDamage(1000.0f, FDamageEvent(), nullptr, nullptr);
+	TestTrue(TEXT("Enemy destroyed when health hits 0"), Enemy->IsActorBeingDestroyed());
 
 	Wrapper.EndPlayInTestWorld();
 	return true;

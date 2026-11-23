@@ -1,11 +1,17 @@
 ﻿// Pickup that restores the player's HP.
-
 #include "HealthPickup.h"
 #include "ShooterCharacter.h"
+#include "HealthComponent.h"
 
 bool AHealthPickup::ApplyPickup(AActor* Other)
 {
-	// Health is not a component yet, so talk to the shooter character directly
-	AShooterCharacter* Character = Cast<AShooterCharacter>(Other);
-	return Character && Character->Heal(HealAmount);
+	// Player only: enemies walking over the pickup must not use it up
+	if (!Cast<AShooterCharacter>(Other))
+	{
+		return false;
+	}
+
+	// Talk to the component, not the character: health rules live in one place
+	UHealthComponent* Health = Other->FindComponentByClass<UHealthComponent>();
+	return Health && Health->Heal(HealAmount);
 }

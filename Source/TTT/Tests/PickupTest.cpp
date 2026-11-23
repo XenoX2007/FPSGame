@@ -12,6 +12,7 @@
 #include "HealthPickup.h"
 #include "ShieldPickup.h"
 #include "CollectiblePickup.h"
+#include "HealthComponent.h"
 
 #if WITH_AUTOMATION_TESTS
 
@@ -23,6 +24,7 @@ namespace TTTPickupTest
 		UWorld* World = nullptr;
 		AShooterCharacter* Character = nullptr;
 		UShooterArmourComponent* Armour = nullptr;
+		UHealthComponent* Health = nullptr;
 
 		bool Setup(FAutomationTestBase& Test)
 		{
@@ -42,9 +44,11 @@ namespace TTTPickupTest
 			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 			Character = World->SpawnActor<AShooterCharacter>(CharacterClass, FTransform::Identity, Params);
 			Armour = Character ? Character->FindComponentByClass<UShooterArmourComponent>() : nullptr;
+			Health = Character ? Character->FindComponentByClass<UHealthComponent>() : nullptr;
 
 			return Test.TestNotNull(TEXT("Character"), Character)
-				&& Test.TestNotNull(TEXT("Armour component"), Armour);
+				&& Test.TestNotNull(TEXT("Armour component"), Armour)
+				&& Test.TestNotNull(TEXT("Health component"), Health);
 		}
 
 		void Damage(float Amount) const
@@ -81,19 +85,20 @@ bool FTTTHealthHealTest::RunTest(const FString& Parameters)
 	TTTPickupTest::FFixture F;
 	if (!F.Setup(*this)) return false;
 
-	const float MaxHP = F.Character->GetMaxHP();
-	TestEqual(TEXT("Starts at full HP"), F.Character->GetCurrentHP(), MaxHP);
-	TestFalse(TEXT("Heal at full HP does nothing"), F.Character->Heal(10.0f));
+	const float MaxHP = F.Health->GetMaxHealth();
+	TestEqual(TEXT("Player keeps its 500 max HP after the HealthComponent refactor"), MaxHP, 500.0f);
+	TestEqual(TEXT("Starts at full HP"), F.Health->GetCurrentHealth(), MaxHP);
+	TestFalse(TEXT("Heal at full HP does nothing"), F.Health->Heal(10.0f));
 
 	F.Damage(100.0f);
-	const float Damaged = F.Character->GetCurrentHP();
+	const float Damaged = F.Health->GetCurrentHealth();
 	TestTrue(TEXT("Precondition: damage lowered HP"), Damaged < MaxHP);
 
-	TestTrue(TEXT("Heal when hurt returns true"), F.Character->Heal(1.0f));
-	TestEqual(TEXT("Heal adds the amount"), F.Character->GetCurrentHP(), Damaged + 1.0f);
+	TestTrue(TEXT("Heal when hurt returns true"), F.Health->Heal(1.0f));
+	TestEqual(TEXT("Heal adds the amount"), F.Health->GetCurrentHealth(), Damaged + 1.0f);
 
-	F.Character->Heal(100000.0f);
-	TestEqual(TEXT("Heal is clamped to MaxHP"), F.Character->GetCurrentHP(), MaxHP);
+	F.Health->Heal(100000.0f);
+	TestEqual(TEXT("Heal is clamped to MaxHP"), F.Health->GetCurrentHealth(), MaxHP);
 	return true;
 }
 
@@ -127,10 +132,10 @@ bool FTTTHealthPickupHealsTest::RunTest(const FString& Parameters)
 	if (!TestNotNull(TEXT("Pickup"), Pickup)) return false;
 
 	F.Damage(200.0f);
-	const float Before = F.Character->GetCurrentHP();
+	const float Before = F.Health->GetCurrentHealth();
 
 	TestTrue(TEXT("TryPickup succeeds when hurt"), Pickup->TryPickup(F.Character));
-	TestEqual(TEXT("HP increased by HealAmount"), F.Character->GetCurrentHP(), Before + Pickup->GetHealAmount());
+	TestEqual(TEXT("HP increased by HealAmount"), F.Health->GetCurrentHealth(), Before + Pickup->GetHealAmount());
 	TestFalse(TEXT("Pickup is no longer available"), Pickup->IsAvailable());
 	TestTrue(TEXT("Pickup is hidden"), Pickup->IsHidden());
 	TestFalse(TEXT("Pickup collision disabled"), Pickup->GetActorEnableCollision());

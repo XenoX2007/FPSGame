@@ -12,6 +12,7 @@ class AShooterWeapon;
 class UInputAction;
 class UInputComponent;
 class UPawnNoiseEmitterComponent;
+class UHealthComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FBulletCountUpdatedDelegate, int32, MagazineSize, int32, Bullets);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDamagedDelegate, float, LifePercent);
@@ -57,12 +58,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category ="Aim", meta = (ClampMin = 0, ClampMax = 100000, Units = "cm"))
 	float MaxAimDistance = 10000.0f;
 
-	/** Max HP this character can have */
-	UPROPERTY(EditAnywhere, Category="Health")
-	float MaxHP = 500.0f;
-
-	/** Current HP remaining to this character */
-	float CurrentHP = 0.0f;
+	/** Health of the player (Max Health is set on this component, default 500). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
+	TObjectPtr<UHealthComponent> HealthComponent;
 
 	/** Team ID for this character*/
 	UPROPERTY(EditAnywhere, Category="Team")
@@ -76,10 +74,12 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Tags")
 	FName PlayerTag = FName("Player");
 
-	/** List of weapons picked up by the character */
-	TArray<AShooterWeapon*> OwnedWeapons;
+	/** List of weapons picked up by the character (UPROPERTY so the GC tracks them and clears destroyed ones) */
+	UPROPERTY()
+	TArray<TObjectPtr<AShooterWeapon>> OwnedWeapons;
 
 	/** Weapon currently equipped and ready to shoot with */
+	UPROPERTY()
 	TObjectPtr<AShooterWeapon> CurrentWeapon;
 
 	UPROPERTY(EditAnywhere, Category ="Destruction", meta = (ClampMin = 0, ClampMax = 10, Units = "s"))
@@ -120,15 +120,21 @@ public:
 	/** Handle incoming damage */
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
-	/** Restores HP (clamped to MaxHP). Returns false if nothing changed (already full or dead). */
-	UFUNCTION(BlueprintCallable, Category="Health")
-	bool Heal(float Amount);
-
 	UFUNCTION(BlueprintPure, Category="Health")
-	float GetCurrentHP() const { return CurrentHP; }
+	UHealthComponent* GetHealthComponent() const { return HealthComponent; }
 
-	UFUNCTION(BlueprintPure, Category="Health")
-	float GetMaxHP() const { return MaxHP; }
+protected:
+
+	/** Binds to the HealthComponent's events (before BeginPlay, so the first health broadcast reaches the HUD) */
+	virtual void PostInitializeComponents() override;
+
+	/** Forwards health changes to OnDamaged, which the PlayerController passes to the HUD */
+	UFUNCTION()
+	void HandleHealthChanged(float CurrentHealth, float MaxHealth);
+
+	/** HealthComponent reached 0 */
+	UFUNCTION()
+	void HandleHealthDepleted(AActor* DeadActor);
 
 public:
 

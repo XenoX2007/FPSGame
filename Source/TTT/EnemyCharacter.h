@@ -11,6 +11,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSimplePawnDeathDelegate);
 class AShooterWeapon;
+class UHealthComponent;
 UCLASS()
 class TTT_API AEnemyCharacter : public ATTTCharacter , public IShooterWeaponHolder
 {
@@ -20,13 +21,9 @@ public:
 	// Sets default values for this character's properties
 	AEnemyCharacter();
 	
-	/** Health the enemy spawns with. The enemy dies when it reaches 0. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Damage", meta = (ClampMin = 1))
-	float MaxHP = 100.0f;
-
-	/** Health left right now (runtime only). */
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Damage")
-	float CurrentHP = 0.0f;
+	/** Health of the enemy (set Max Health on this component). The enemy dies when it reaches 0. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UHealthComponent> HealthComponent;
 
 	/** Weapon Blueprint the enemy spawns holding (attached to the HandGrip_R socket). */
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
@@ -81,5 +78,13 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	// Binds to the HealthComponent before BeginPlay
+	virtual void PostInitializeComponents() override;
+
+	// HealthComponent reached 0
+	UFUNCTION()
+	void HandleHealthDepleted(AActor* DeadActor);
+
 	void Die();
 };

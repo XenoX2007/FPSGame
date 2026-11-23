@@ -12,6 +12,7 @@
 #include "Engine/World.h"
 #include "Camera/CameraComponent.h"
 #include "TimerManager.h"
+#include "HealthComponent.h"
 
 AShooterCharacter::AShooterCharacter()
 {
@@ -22,19 +23,34 @@ AShooterCharacter::AShooterCharacter()
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 600.0f, 0.0f);
 	
 	_ArmourComponent = CreateDefaultSubobject<UShooterArmourComponent>(TEXT("ArmourComponent"));
-	// configure movement
-	
+
+	// Same component the enemies use; the player just starts with more health
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+	HealthComponent->MaxHealth = 500.0f;
+}
+
+void AShooterCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	HealthComponent->OnHealthChanged.AddUniqueDynamic(this, &AShooterCharacter::HandleHealthChanged);
+	HealthComponent->OnHealthDepleted.AddUniqueDynamic(this, &AShooterCharacter::HandleHealthDepleted);
 }
 
 void AShooterCharacter::BeginPlay()
 {
+	// HealthComponent's BeginPlay (inside Super) resets health and broadcasts it, which updates the HUD
 	Super::BeginPlay();
+}
 
-	// reset HP to max
-	CurrentHP = MaxHP;
+void AShooterCharacter::HandleHealthChanged(float CurrentHealth, float MaxHealth)
+{
+	OnDamaged.Broadcast(MaxHealth > 0.0f ? CurrentHealth / MaxHealth : 0.0f);
+}
 
-	// update the HUD
-	OnDamaged.Broadcast(1.0f);
+void AShooterCharacter::HandleHealthDepleted(AActor* DeadActor)
+{
+	Die();
 }
 
 void AShooterCharacter::EndPlay(EEndPlayReason::Type EndPlayReason)
@@ -65,46 +81,20 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 
 float AShooterCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	// ignore if already dead
-	if (CurrentHP <= 0.0f)
+	// ignore if already dead (also keeps the armour from absorbing hits on a corpse)
+	if (HealthComponent->IsDead())
 	{
 		return 0.0f;
 	}
-	
+
+	// Armour absorbs part of the hit first, the rest goes to health
 	if (_ArmourComponent)
 	{
 		Damage = _ArmourComponent->MitigateDamage(Damage);
 	}
 
-
-	// Reduce HP
-	CurrentHP -= Damage;
-
-	// Have we depleted HP?
-	if (CurrentHP <= 0.0f)
-	{
-		Die();
-	}
-
-	// update the HUD
-	OnDamaged.Broadcast(FMath::Max(0.0f, CurrentHP / MaxHP));
-
-	return Damage;
-}
-
-bool AShooterCharacter::Heal(float Amount)
-{
-	// Can't heal the dead, and nothing to do at full HP
-	if (Amount <= 0.0f || CurrentHP <= 0.0f || CurrentHP >= MaxHP)
-	{
-		return false;
-	}
-
-	CurrentHP = FMath::Min(CurrentHP + Amount, MaxHP);
-
-	// Same delegate TakeDamage uses, so the HUD health bar updates
-	OnDamaged.Broadcast(CurrentHP / MaxHP);
-	return true;
+	// HealthComponent broadcasts OnHealthChanged (-> HUD) and, at 0, OnHealthDepleted (-> Die)
+	return HealthComponent->ApplyDamage(Damage);
 }
 
 void AShooterCharacter::DoAim(float Yaw, float Pitch)
@@ -349,8 +339,8 @@ void AShooterCharacter::OnRespawn()
 
 bool AShooterCharacter::IsDead() const
 {
-	// the character is dead if their current HP drops to zero
-	return CurrentHP <= 0.0f;
+	// the character is dead if their health drops to zero
+	return HealthComponent->IsDead();
 }
 
 void AShooterCharacter::SetTeam(uint8 Team)

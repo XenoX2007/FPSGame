@@ -7,6 +7,7 @@
 #include "Misc/AutomationTest.h"
 #include "UObject/UObjectIterator.h"
 #include "UObject/UnrealType.h"
+#include "ShooterCharacter.h"
 
 #if WITH_AUTOMATION_TESTS
 
@@ -64,6 +65,20 @@ bool FTTTNoRawUPropertyPointersTest::RunTest(const FString& Parameters)
 	for (const FString& Error : Errors)
 	{
 		AddError(Error);
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTTTWeaponRefsTrackedTest, "TTT.Code.PlayerWeaponReferencesAreGCTracked",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTTTWeaponRefsTrackedTest::RunTest(const FString& Parameters)
+{
+	// A member without UPROPERTY is invisible to the garbage collector: if the weapon is destroyed,
+	// the pointer is not cleared and dangles. The scan above only sees UPROPERTYs, so check these by name.
+	UClass* Class = AShooterCharacter::StaticClass();
+	for (const TCHAR* Name : { TEXT("OwnedWeapons"), TEXT("CurrentWeapon") })
+	{
+		TestNotNull(*FString::Printf(TEXT("AShooterCharacter::%s is a UPROPERTY"), Name), Class->FindPropertyByName(Name));
 	}
 	return true;
 }
