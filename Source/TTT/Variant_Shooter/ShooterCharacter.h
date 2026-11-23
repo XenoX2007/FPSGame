@@ -15,6 +15,7 @@ class UPawnNoiseEmitterComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FBulletCountUpdatedDelegate, int32, MagazineSize, int32, Bullets);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDamagedDelegate, float, LifePercent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FShooterDeathDelegate, AShooterCharacter*, DeadCharacter);
 
 /**
  *  A player controllable first person shooter character
@@ -93,6 +94,10 @@ public:
 
 	/** Damaged delegate */
 	FDamagedDelegate OnDamaged;
+
+	/** Fired once when this character's HP reaches zero. The GameMode listens to end the round. */
+	UPROPERTY(BlueprintAssignable, Category="Health|Events")
+	FShooterDeathDelegate OnDeath;
 
 public:
 

@@ -26,7 +26,7 @@ public:
 
 	/** Health left right now (runtime only). */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Damage")
-	float CurrentHP ;
+	float CurrentHP = 0.0f;
 
 	/** Weapon Blueprint the enemy spawns holding (attached to the HandGrip_R socket). */
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")

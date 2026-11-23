@@ -7,8 +7,9 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "FPSGameMode.h"
-#include "Private/Checkpoint.h"
 #include "CollectiblePickup.h"
+#include "ShooterCharacter.h"
+#include "Engine/DamageEvents.h"
 
 #if WITH_AUTOMATION_TESTS
 
@@ -214,35 +215,6 @@ bool FTTTGameStateStartTwiceTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-// ---- Checkpoints: GameMode listens to every checkpoint in the level ----
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTTTGameModeBindsCheckpointsTest, "TTT.GameMode.BindsCheckpointPickups",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-bool FTTTGameModeBindsCheckpointsTest::RunTest(const FString& Parameters)
-{
-	FTestWorldWrapper Wrapper;
-	if (!Wrapper.CreateTestWorld(EWorldType::Game) || !Wrapper.BeginPlayInTestWorld())
-	{
-		Wrapper.ForwardErrorMessages(this);
-		return false;
-	}
-
-	// Checkpoints are placed in the level before the GameMode begins play.
-	UWorld* World = Wrapper.GetTestWorld();
-	ACheckpoint* CheckpointA = World->SpawnActor<ACheckpoint>();
-	ACheckpoint* CheckpointB = World->SpawnActor<ACheckpoint>();
-	if (!TestNotNull(TEXT("Checkpoint A spawned"), CheckpointA) || !TestNotNull(TEXT("Checkpoint B spawned"), CheckpointB)) return false;
-
-	AFPSGameMode* GameMode = TTTTimerTest::SpawnGameMode(World, 10.0f, /*bStartMatch*/ false);
-	if (!TestNotNull(TEXT("GameMode spawned"), GameMode)) return false;
-
-	TestTrue(TEXT("GameMode bound to checkpoint A"), CheckpointA->ItemPickedUp.IsAlreadyBound(GameMode, &AFPSGameMode::OnItemPickedUp));
-	TestTrue(TEXT("GameMode bound to checkpoint B"), CheckpointB->ItemPickedUp.IsAlreadyBound(GameMode, &AFPSGameMode::OnItemPickedUp));
-
-	Wrapper.EndPlayInTestWorld();
-	return true;
-}
-
 // ---- Win condition: collect every collectible before the timer runs out ----
 
 namespace TTTTimerTest
@@ -346,6 +318,91 @@ bool FTTTGameModeLosesTest::RunTest(const FString& Parameters)
 	Items[1]->OnCollected.Broadcast(Items[1]);
 	TestFalse(TEXT("Late collect does not win"), GameMode->bPlayerWon);
 	TestEqual(TEXT("Late collect not counted"), GameMode->GetCollectedCount(), 1);
+
+	Wrapper.EndPlayInTestWorld();
+	return true;
+}
+
+namespace TTTTimerTest
+{
+	// AShooterCharacter is UCLASS(abstract), so spawn the real player Blueprint instead
+	AShooterCharacter* SpawnPlayer(FAutomationTestBase& Test, UWorld* World)
+	{
+		UClass* CharacterClass = LoadClass<AShooterCharacter>(nullptr,
+			TEXT("/Game/Variant_Shooter/Blueprints/BP_ShooterCharacter.BP_ShooterCharacter_C"));
+		if (!Test.TestNotNull(TEXT("BP_ShooterCharacter class loaded"), CharacterClass)) return nullptr;
+
+		FActorSpawnParameters Params;
+		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		return World->SpawnActor<AShooterCharacter>(CharacterClass, FTransform::Identity, Params);
+	}
+
+	// Enough damage to get through any armour and kill the player
+	void Kill(AShooterCharacter* Character)
+	{
+		Character->TakeDamage(1000000.0f, FDamageEvent(), nullptr, nullptr);
+	}
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTTTGameModePlayerDeathLosesTest, "TTT.GameMode.LosesWhenPlayerDies",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTTTGameModePlayerDeathLosesTest::RunTest(const FString& Parameters)
+{
+	FTestWorldWrapper Wrapper;
+	if (!Wrapper.CreateTestWorld(EWorldType::Game) || !Wrapper.BeginPlayInTestWorld())
+	{
+		Wrapper.ForwardErrorMessages(this);
+		return false;
+	}
+
+	UWorld* World = Wrapper.GetTestWorld();
+	TTTTimerTest::SpawnCollectibles(World, 2);
+	AFPSGameMode* GameMode = TTTTimerTest::SpawnGameMode(World, 10.0f, /*bStartMatch*/ true);
+	AShooterCharacter* Player = TTTTimerTest::SpawnPlayer(*this, World);
+	if (!TestNotNull(TEXT("GameMode spawned"), GameMode) || !TestNotNull(TEXT("Player spawned"), Player)) return false;
+
+	// Same call the engine makes in RestartPlayer() right after spawning the player pawn
+	GameMode->SetPlayerDefaults(Player);
+
+	TTTTimerTest::TickSeconds(Wrapper, 2);
+	TTTTimerTest::Kill(Player);
+	TestTrue(TEXT("Round over when the player dies"), GameMode->bIsRoundOver);
+	TestTrue(TEXT("Loss reason is death"), GameMode->bPlayerDied);
+	TestFalse(TEXT("Player did not win"), GameMode->bPlayerWon);
+
+	// Countdown must stop once the player is dead.
+	TTTTimerTest::TickSeconds(Wrapper, 3);
+	TestEqual(TEXT("Timer frozen after death"), GameMode->RemainingTime, 8.0f);
+
+	Wrapper.EndPlayInTestWorld();
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTTTGameModeDeathAfterWinTest, "TTT.GameMode.DeathAfterWinKeepsWin",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FTTTGameModeDeathAfterWinTest::RunTest(const FString& Parameters)
+{
+	FTestWorldWrapper Wrapper;
+	if (!Wrapper.CreateTestWorld(EWorldType::Game) || !Wrapper.BeginPlayInTestWorld())
+	{
+		Wrapper.ForwardErrorMessages(this);
+		return false;
+	}
+
+	UWorld* World = Wrapper.GetTestWorld();
+	TArray<ACollectiblePickup*> Items = TTTTimerTest::SpawnCollectibles(World, 1);
+	AFPSGameMode* GameMode = TTTTimerTest::SpawnGameMode(World, 10.0f, /*bStartMatch*/ true);
+	AShooterCharacter* Player = TTTTimerTest::SpawnPlayer(*this, World);
+	if (!TestNotNull(TEXT("GameMode spawned"), GameMode) || !TestNotNull(TEXT("Player spawned"), Player)) return false;
+	GameMode->SetPlayerDefaults(Player);
+
+	Items[0]->OnCollected.Broadcast(Items[0]);
+	TestTrue(TEXT("Player won"), GameMode->bPlayerWon);
+
+	// A stray bullet after the win must not turn it into a loss.
+	TTTTimerTest::Kill(Player);
+	TestTrue(TEXT("Still won"), GameMode->bPlayerWon);
+	TestFalse(TEXT("Death not recorded after the round ended"), GameMode->bPlayerDied);
 
 	Wrapper.EndPlayInTestWorld();
 	return true;

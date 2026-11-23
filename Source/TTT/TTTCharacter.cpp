@@ -115,8 +115,6 @@ void ATTTCharacter::DoDash()
 	FVector ForwardVector = GetActorForwardVector();
 	
 	SetActorLocation(GetActorLocation() + ForwardVector * DashDistance);
-
-	UE_LOG(LogTemp, Warning, TEXT("DASH!"));
 }
 
 void ATTTCharacter::DoJumpStart()
@@ -129,9 +127,4 @@ void ATTTCharacter::DoJumpEnd()
 {
 	// pass StopJumping to the character
 	StopJumping();
-}
-
-void ATTTCharacter::AddScore_Implementation()
-{
-	UE_LOG(LogTemp, Warning, TEXT("ATTTCharacter::AddScore_Implementation()"));
 }

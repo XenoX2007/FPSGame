@@ -10,6 +10,7 @@
  * 
  */
 class ACollectiblePickup;
+class AShooterCharacter;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTimerUpdatedDelegate, float, RemainingTime);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCollectibleProgressDelegate, int32, Collected, int32, Total);
@@ -50,13 +51,20 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Game State")
 	void StartGameMatch();
 
-	// Bound to every ACheckpoint::ItemPickedUp in the level
-	UFUNCTION()
-	void OnItemPickedUp();
-
 	/** True when the round ended because every collectible was collected (runtime only). */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Game State")
 	bool bPlayerWon = false;
+
+	/** True when the round was lost because the player died, false if the timer ran out (runtime only). */
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Game State")
+	bool bPlayerDied = false;
+
+	// Called from the Restart button on the game-over / win screen: reloads the current level
+	UFUNCTION(BlueprintCallable, Category = "Game State")
+	void RestartRound();
+
+	// Engine calls this after spawning the player pawn: we subscribe to its OnDeath here
+	virtual void SetPlayerDefaults(APawn* PlayerPawn) override;
 
 	UFUNCTION(BlueprintPure, Category = "Collectibles")
 	int32 GetTotalCollectibles() const { return TotalCollectibles; }
@@ -78,7 +86,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Game State|Events")
 	FOnRoundEventDelegate OnGameWon;
 
-	/** Fired once when the timer reached zero. Show the game-over screen here. */
+	/** Fired once when the round is lost (timer reached zero or the player died). Show the game-over screen here; read bPlayerDied for the reason. */
 	UPROPERTY(BlueprintAssignable, Category = "Game State|Events")
 	FOnRoundEventDelegate OnGameLost;
 
@@ -97,13 +105,14 @@ public:
 
 	// Win condition: all collectibles collected before the timer ran out
 	void HandleGameWin();
+
+	// Bound to the player's AShooterCharacter::OnDeath: dying is a loss
+	UFUNCTION()
+	void HandlePlayerDeath(AShooterCharacter* DeadCharacter);
 	
 	protected:
 	virtual void BeginPlay() override;
 
 	// Match only leaves WaitingToStart after the player pressed Start
 	virtual bool ReadyToStartMatch_Implementation() override;
-
-	// Debug message while waiting for the Start button
-	virtual void HandleMatchIsWaitingToStart() override;
 };

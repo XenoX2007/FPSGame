@@ -76,9 +76,7 @@ float AShooterCharacter::TakeDamage(float Damage, struct FDamageEvent const& Dam
 	{
 		Damage = _ArmourComponent->MitigateDamage(Damage);
 	}
-	
-	UE_LOG(LogTemp, Warning, TEXT("Damage: %f"), Damage);
-	
+
 
 	// Reduce HP
 	CurrentHP -= Damage;
@@ -342,6 +340,9 @@ void AShooterCharacter::Die()
 
 	// call the BP handler
 	BP_OnDeath();
+
+	// notify listeners (AFPSGameMode ends the round -> game-over screen with Restart)
+	OnDeath.Broadcast(this);
 
 	// schedule character respawn
 	GetWorld()->GetTimerManager().SetTimer(RespawnTimer, this, &AShooterCharacter::OnRespawn, RespawnTime, false);

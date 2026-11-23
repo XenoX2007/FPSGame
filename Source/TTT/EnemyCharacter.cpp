@@ -11,9 +11,6 @@
 // Sets default values
 AEnemyCharacter::AEnemyCharacter()
 {
-	
-	CurrentHP = MaxHP;
-	
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -81,7 +78,10 @@ FVector AEnemyCharacter::GetWeaponTargetLocation()
 void AEnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	// Read MaxHP here, not in the constructor: Blueprint defaults are applied after the constructor runs
+	CurrentHP = MaxHP;
+
 	if (IsValid(WeaponClass))
 	{
 		FActorSpawnParameters SpawnParams;

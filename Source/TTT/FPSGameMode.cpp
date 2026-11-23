@@ -3,10 +3,11 @@
 
 #include "FPSGameMode.h"
 
-#include "Engine/Engine.h"
+#include "TTT.h"
 #include "EngineUtils.h"
-#include "Private/Checkpoint.h"
 #include "CollectiblePickup.h"
+#include "ShooterCharacter.h"
+#include "Kismet/GameplayStatics.h"
 
 
 AFPSGameMode::AFPSGameMode()
@@ -23,12 +24,6 @@ void AFPSGameMode::BeginPlay()
 	RemainingTime = GameDuration;
 	OnTimerUpdated.Broadcast(RemainingTime);
 	// Countdown no longer starts here: it waits for StartGameMatch() (Start button)
-
-	// Listen to every checkpoint placed in the level
-	for (TActorIterator<ACheckpoint> It(GetWorld()); It; ++It)
-	{
-		It->ItemPickedUp.AddUniqueDynamic(this, &AFPSGameMode::OnItemPickedUp);
-	}
 
 	// Count the win-condition collectibles and listen to each of them
 	TotalCollectibles = 0;
@@ -72,20 +67,33 @@ void AFPSGameMode::HandleGameWin()
 	}
 }
 
-void AFPSGameMode::HandleMatchIsWaitingToStart()
+void AFPSGameMode::SetPlayerDefaults(APawn* PlayerPawn)
 {
-	Super::HandleMatchIsWaitingToStart();
+	Super::SetPlayerDefaults(PlayerPawn);
 
-	if (GEngine)
+	// Observer: the character only broadcasts that it died, the GameMode decides what that means
+	if (AShooterCharacter* Player = Cast<AShooterCharacter>(PlayerPawn))
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red,
-			TEXT("STATE: Pre-Game (Waiting for button press / MatchState::WaitingToStart)"));
+		Player->OnDeath.AddUniqueDynamic(this, &AFPSGameMode::HandlePlayerDeath);
 	}
 }
 
-void AFPSGameMode::OnItemPickedUp()
+void AFPSGameMode::HandlePlayerDeath(AShooterCharacter* DeadCharacter)
 {
-	UE_LOG(LogTemp, Warning, TEXT("ItemPickedUp"));
+	// Dying after the round already ended (e.g. after a win) changes nothing
+	if (bIsRoundOver)
+	{
+		return;
+	}
+
+	bPlayerDied = true;
+	HandleGameLoss();
+}
+
+void AFPSGameMode::RestartRound()
+{
+	// Reloading the level resets every actor (timer, pickups, enemies, player) to its placed state
+	UGameplayStatics::OpenLevel(this, FName(*UGameplayStatics::GetCurrentLevelName(this)));
 }
 
 bool AFPSGameMode::ReadyToStartMatch_Implementation()
@@ -142,10 +150,10 @@ void AFPSGameMode::HandleGameLoss()
 	}
 
 	bIsRoundOver = true;
-	UE_LOG(LogTemp, Warning, TEXT("Timer hit 0! Game Over - Loss Condition Triggered."));
+	GetWorldTimerManager().ClearTimer(CountdownTimerHandle);
+	UE_LOG(LogTTT, Log, TEXT("Game Over - %s"), bPlayerDied ? TEXT("player died") : TEXT("time ran out"));
 	OnGameLost.Broadcast();
 
-	// Implement your loss condition here:
 	APlayerController* PC = GetWorld()->GetFirstPlayerController();
 	if (PC)
 	{

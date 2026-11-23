@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
-#include "I_Scorable2.h"
 #include "TTTCharacter.generated.h"
 
 
@@ -21,7 +20,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
  *  A basic first person character
  */
 UCLASS(abstract)
-class ATTTCharacter : public ACharacter, public II_Scorable2
+class ATTTCharacter : public ACharacter
 {
 	GENERATED_BODY()
 	
@@ -63,8 +62,6 @@ protected:
 	
 public:
 	ATTTCharacter();
-	
-	virtual void AddScore_Implementation() override;
 	
 
 protected:
