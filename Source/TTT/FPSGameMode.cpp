@@ -39,7 +39,7 @@ void AFPSGameMode::BeginPlay()
 void AFPSGameMode::HandleCollectibleCollected(ACollectiblePickup* Pickup)
 {
 	// Collecting after the round ended (win or loss) changes nothing
-	if (bIsRoundOver)
+	if (CurrentPhase == EGamePhase::PostGame)
 	{
 		return;
 	}
@@ -55,9 +55,10 @@ void AFPSGameMode::HandleCollectibleCollected(ACollectiblePickup* Pickup)
 
 void AFPSGameMode::HandleGameWin()
 {
-	bIsRoundOver = true;
+	// Set the result before the phase change so phase listeners can read it
 	bPlayerWon = true;
 	GetWorldTimerManager().ClearTimer(CountdownTimerHandle);
+	SetGamePhase(EGamePhase::PostGame);
 
 	OnGameWon.Broadcast();
 
@@ -81,7 +82,7 @@ void AFPSGameMode::SetPlayerDefaults(APawn* PlayerPawn)
 void AFPSGameMode::HandlePlayerDeath(AShooterCharacter* DeadCharacter)
 {
 	// Dying after the round already ended (e.g. after a win) changes nothing
-	if (bIsRoundOver)
+	if (CurrentPhase == EGamePhase::PostGame)
 	{
 		return;
 	}
@@ -104,21 +105,40 @@ bool AFPSGameMode::ReadyToStartMatch_Implementation()
 
 void AFPSGameMode::StartGameMatch()
 {
-	// Ignore repeated presses and presses after the round ended
-	if (bIsRoundOver || GetWorldTimerManager().TimerExists(CountdownTimerHandle))
+	// Start only works from Pre-Game: ignores repeated presses and presses after the round ended
+	if (CurrentPhase != EGamePhase::PreGame)
 	{
 		return;
 	}
 
 	bManualStartRequested = true;
-
-	if (GetMatchState() == MatchState::WaitingToStart)
-	{
-		StartMatch();
-	}
+	SetGamePhase(EGamePhase::InGame);
 
 	GetWorldTimerManager().SetTimer(CountdownTimerHandle, this, &AFPSGameMode::UpdateTimer, 1.0f, true);
 	OnMatchStarted.Broadcast();
+}
+
+void AFPSGameMode::SetGamePhase(EGamePhase NewPhase)
+{
+	if (NewPhase == CurrentPhase)
+	{
+		return;
+	}
+
+	CurrentPhase = NewPhase;
+	bIsRoundOver = (NewPhase == EGamePhase::PostGame);
+
+	// Keep the engine's MatchState in step (guarded: a bare test world has no GameSession / StartPlay)
+	if (NewPhase == EGamePhase::InGame && GetMatchState() == MatchState::WaitingToStart)
+	{
+		StartMatch();
+	}
+	else if (NewPhase == EGamePhase::PostGame && IsMatchInProgress())
+	{
+		EndMatch();
+	}
+
+	OnGamePhaseChanged.Broadcast(NewPhase);
 }
 
 void AFPSGameMode::UpdateTimer()
@@ -144,13 +164,13 @@ void AFPSGameMode::UpdateTimer()
 void AFPSGameMode::HandleGameLoss()
 {
 	// Only one result per round (a win may already have ended it)
-	if (bIsRoundOver)
+	if (CurrentPhase == EGamePhase::PostGame)
 	{
 		return;
 	}
 
-	bIsRoundOver = true;
 	GetWorldTimerManager().ClearTimer(CountdownTimerHandle);
+	SetGamePhase(EGamePhase::PostGame);
 	UE_LOG(LogTTT, Log, TEXT("Game Over - %s"), bPlayerDied ? TEXT("player died") : TEXT("time ran out"));
 	OnGameLost.Broadcast();
 

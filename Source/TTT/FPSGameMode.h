@@ -15,6 +15,18 @@ class AShooterCharacter;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTimerUpdatedDelegate, float, RemainingTime);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCollectibleProgressDelegate, int32, Collected, int32, Total);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRoundEventDelegate);
+
+/** The three phases of a round. */
+UENUM(BlueprintType)
+enum class EGamePhase : uint8
+{
+	PreGame		UMETA(ToolTip = "Waiting for the player to press Start."),
+	InGame		UMETA(ToolTip = "Countdown is running."),
+	PostGame	UMETA(ToolTip = "Round ended by a win or a loss.")
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGamePhaseChangedDelegate, EGamePhase, NewPhase);
+
 UCLASS()
 
 class TTT_API AFPSGameMode : public AGameMode
@@ -32,7 +44,7 @@ public:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Timer")
 	float RemainingTime;
 
-	/** True once the round has ended, by a win or a loss (runtime only). */
+	/** True once the round has ended, by a win or a loss (runtime only). Same as GetGamePhase() == PostGame; kept for existing Blueprints. */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Game State")
 	bool bIsRoundOver = false;
 
@@ -90,7 +102,20 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Game State|Events")
 	FOnRoundEventDelegate OnGameLost;
 
+	/** Current phase of the round: Pre-Game, In-Game or Post-Game. */
+	UFUNCTION(BlueprintPure, Category = "Game State")
+	EGamePhase GetGamePhase() const { return CurrentPhase; }
+
+	/** Fired on every phase change. Switch HUD / menus / input mode on this. In Post-Game, read bPlayerWon / bPlayerDied for the result. */
+	UPROPERTY(BlueprintAssignable, Category = "Game State|Events")
+	FOnGamePhaseChangedDelegate OnGamePhaseChanged;
+
 	private:
+	EGamePhase CurrentPhase = EGamePhase::PreGame;
+
+	// Only place the phase changes: keeps the engine MatchState in sync and notifies listeners
+	void SetGamePhase(EGamePhase NewPhase);
+
 	FTimerHandle CountdownTimerHandle;
 
 	int32 TotalCollectibles = 0;
