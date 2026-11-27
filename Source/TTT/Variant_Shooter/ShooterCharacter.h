@@ -46,6 +46,17 @@ protected:
 	UPROPERTY(EditAnywhere, Category ="Input")
 	TObjectPtr<UInputAction> SwitchWeaponAction;
 
+	/** Sprint input action (hold to sprint) */
+	UPROPERTY(EditAnywhere, Category ="Input")
+	TObjectPtr<UInputAction> SprintAction;
+
+	/** Max walk speed while the sprint key is held. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category ="Sprint", meta = (ClampMin = 0, Units = "cm/s"))
+	float SprintSpeed = 900.0f;
+
+	/** Walk speed from the movement component, cached at BeginPlay so sprint can restore it */
+	float DefaultWalkSpeed = 0.0f;
+
 	/** Name of the first person mesh weapon socket */
 	UPROPERTY(EditAnywhere, Category ="Weapons")
 	FName FirstPersonWeaponSocket = FName("HandGrip_R");
@@ -122,6 +133,14 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Health")
 	UHealthComponent* GetHealthComponent() const { return HealthComponent; }
+
+	/** Key pressed: run at SprintSpeed. */
+	UFUNCTION(BlueprintCallable, Category="Input")
+	void DoSprintStart();
+
+	/** Key released (or input cancelled): back to the normal walk speed. */
+	UFUNCTION(BlueprintCallable, Category="Input")
+	void DoSprintEnd();
 
 protected:
 

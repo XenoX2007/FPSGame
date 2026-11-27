@@ -55,9 +55,22 @@ protected:
 	UPROPERTY(EditAnywhere, Category ="Input")	
 	TObjectPtr<UInputAction> DashAction;
 
-	/** How far the dash teleports the character forward, in cm. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dash", meta = (ClampMin = 0, Units = "cm"))
-	float DashDistance = 1200.0f;
+	/** Launch speed of the dash, in the direction the player is moving (forward if standing still). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dash", meta = (ClampMin = 0, Units = "cm/s"))
+	float DashSpeed = 2500.0f;
+
+	/** Seconds before the player can dash again. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dash", meta = (ClampMin = 0, Units = "s"))
+	float DashCooldown = 1.0f;
+
+private:
+	bool bCanDash = true;
+	FTimerHandle DashCooldownTimer;
+
+	// Cooldown timer callback
+	void ResetDash();
+
+protected:
 
 	
 public:
@@ -87,10 +100,15 @@ protected:
 	/** Handles jump end inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
-	
-	/** Handles Dash */
+
+public:
+	/** Launches the character in its move direction; ignored while the dash is on cooldown. */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoDash();
+
+	/** False while the dash is on cooldown (use it for a HUD cooldown icon). */
+	UFUNCTION(BlueprintPure, Category="Dash")
+	bool IsDashReady() const { return bCanDash; }
 
 protected:
 

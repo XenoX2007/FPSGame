@@ -8,6 +8,7 @@
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "TimerManager.h"
 #include "TTT.h"
 
 ATTTCharacter::ATTTCharacter()
@@ -61,7 +62,8 @@ void ATTTCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &ATTTCharacter::LookInput);
 		
 		// Dashing
-		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Triggered, this, &ATTTCharacter::DoDash);
+		// Started fires once per key press; Triggered would fire every frame while held
+		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &ATTTCharacter::DoDash);
 	}
 	else
 	{
@@ -112,9 +114,31 @@ void ATTTCharacter::DoMove(float Right, float Forward)
 
 void ATTTCharacter::DoDash()
 {
-	FVector ForwardVector = GetActorForwardVector();
-	
-	SetActorLocation(GetActorLocation() + ForwardVector * DashDistance);
+	if (!bCanDash)
+	{
+		return;
+	}
+
+	// Dash where the player is steering (WASD); fall back to facing direction when standing still
+	FVector Direction = GetLastMovementInputVector().GetSafeNormal2D();
+	if (Direction.IsNearlyZero())
+	{
+		Direction = GetActorForwardVector().GetSafeNormal2D();
+	}
+
+	// Launch goes through CharacterMovement, so walls stop the dash (SetActorLocation would tunnel through them)
+	LaunchCharacter(Direction * DashSpeed, /*bXYOverride*/ true, /*bZOverride*/ false);
+
+	if (DashCooldown > 0.0f)
+	{
+		bCanDash = false;
+		GetWorldTimerManager().SetTimer(DashCooldownTimer, this, &ATTTCharacter::ResetDash, DashCooldown, false);
+	}
+}
+
+void ATTTCharacter::ResetDash()
+{
+	bCanDash = true;
 }
 
 void ATTTCharacter::DoJumpStart()

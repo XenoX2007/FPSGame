@@ -41,6 +41,19 @@ void AShooterCharacter::BeginPlay()
 {
 	// HealthComponent's BeginPlay (inside Super) resets health and broadcasts it, which updates the HUD
 	Super::BeginPlay();
+
+	// Whatever walk speed the Blueprint set becomes the speed sprint returns to
+	DefaultWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+}
+
+void AShooterCharacter::DoSprintStart()
+{
+	GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+}
+
+void AShooterCharacter::DoSprintEnd()
+{
+	GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
 }
 
 void AShooterCharacter::HandleHealthChanged(float CurrentHealth, float MaxHealth)
@@ -75,6 +88,11 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 
 		// Switch weapon
 		EnhancedInputComponent->BindAction(SwitchWeaponAction, ETriggerEvent::Triggered, this, &AShooterCharacter::DoSwitchWeapon);
+
+		// Sprint while held: Started = pressed, Completed = released, Canceled = input interrupted (e.g. focus lost)
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AShooterCharacter::DoSprintStart);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &AShooterCharacter::DoSprintEnd);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Canceled, this, &AShooterCharacter::DoSprintEnd);
 	}
 
 }
