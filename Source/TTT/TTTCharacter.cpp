@@ -128,6 +128,7 @@ void ATTTCharacter::DoDash()
 
 	// Launch goes through CharacterMovement, so walls stop the dash (SetActorLocation would tunnel through them)
 	LaunchCharacter(Direction * DashSpeed, /*bXYOverride*/ true, /*bZOverride*/ false);
+	OnDashed.Broadcast();
 
 	if (DashCooldown > 0.0f)
 	{

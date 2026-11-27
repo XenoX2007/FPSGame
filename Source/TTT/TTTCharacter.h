@@ -16,6 +16,8 @@ struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDashedDelegate);
+
 /**
  *  A basic first person character
  */
@@ -105,6 +107,10 @@ public:
 	/** Launches the character in its move direction; ignored while the dash is on cooldown. */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoDash();
+
+	/** Fired each time a dash actually happens (not when blocked by the cooldown). */
+	UPROPERTY(BlueprintAssignable, Category="Dash|Events")
+	FDashedDelegate OnDashed;
 
 	/** False while the dash is on cooldown (use it for a HUD cooldown icon). */
 	UFUNCTION(BlueprintPure, Category="Dash")
